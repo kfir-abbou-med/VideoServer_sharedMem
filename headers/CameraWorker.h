@@ -21,6 +21,7 @@ public slots:
 signals:
     void frameReady(const QImage &image);
     void errorOccurred(const QString &error);
+    void fpsUpdated(double fps);
 
 private:
     int cameraIndex;

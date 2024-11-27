@@ -68,9 +68,4 @@ void MainWindow::detectCameras()
         QMessageBox::warning(this, "No Cameras Found", "No available cameras were detected!");
         return;
     }
-
-    // for (int cameraIndex : availableCameras) {
-    //     CameraWindow *cameraWindow = new CameraWindow(cameraIndex);
-    //     cameraWindow->show();
-    // }
 }

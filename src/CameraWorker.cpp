@@ -1,4 +1,5 @@
 #include "headers/CameraWorker.h"
+#include "headers/FrameRateTracker.h"
 #include <iostream>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -43,9 +44,11 @@ void CameraWorker::start()
         shm.truncate(640 * 480 * 3); // Assuming 640x480 resolution, 3 bytes per pixel (RGB)
         mapped_region region(shm, read_write);
         void *sharedMemory = region.get_address();
-
+        FrameRateTracker fpsTracker;
+        
         while (isRunning)
         {
+           
             cv::Mat frame;
             if (!capture.read(frame) || frame.empty())
             {
@@ -55,6 +58,10 @@ void CameraWorker::start()
 
             // Apply brightness adjustment
             frame.convertTo(frame, -1, brightnessFactor, 0);
+
+            // Update FPS tracker
+            fpsTracker.update();
+
 
             // Apply zoom by cropping
             int centerX = frame.cols / 2;
@@ -67,12 +74,21 @@ void CameraWorker::start()
             // Resize to the original size to fit the window
             cv::Mat resizedFrame;
             cv::resize(zoomedFrame, resizedFrame, cv::Size(frame.cols, frame.rows));
+            std::stringstream fpsText;
+            fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
+            cv::putText(resizedFrame, 
+                        fpsText.str(), 
+                        cv::Point(10, 30),  // Position of text
+                        cv::FONT_HERSHEY_SIMPLEX, 
+                        1.0,  // Font scale
+                        cv::Scalar(0, 255, 0),  // Green color
+                        2);  // Thickness
 
             // Write frame to shared memory
             if (resizedFrame.total() * resizedFrame.elemSize() <= region.get_size())
             {
                 std::memcpy(sharedMemory, resizedFrame.data, resizedFrame.total() * resizedFrame.elemSize());
-                cout << "Frame written to shared memory - Cam index: " << cameraIndex << endl;
+                // cout << "Frame written to shared memory - Cam index: " << cameraIndex << endl;
             }
             else
             {

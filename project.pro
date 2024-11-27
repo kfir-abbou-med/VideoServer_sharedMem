@@ -30,12 +30,15 @@ SOURCES += \
     src/main.cpp \
     src/Mainwindow.cpp \
     src/CameraWorker.cpp \ 
-    src/CameraWindow.cpp
+    src/CameraWindow.cpp \
+    src/FrameRateTracker.cpp
+.cpp
 
 HEADERS += \
     headers/MainWindow.h \
     headers/CameraWorker.h \
-    headers/CameraWindow.h
+    headers/CameraWindow.h \
+    headers/FrameRateTracker.h
 
 # Link against Qt modules
 QT += core gui widgets
