@@ -11,7 +11,7 @@ using namespace std;
 CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     : QWidget(parent), worker(nullptr), workerThread(nullptr), brightnessFactor(1.0), zoomFactor(1.0), cameraIndex(cameraIndex){
     setWindowTitle(QString("Camera %1").arg(cameraIndex));
-    setFixedSize(640, 480);
+    setFixedSize(200, 200);
 
     // UI setup
     label = new QLabel(this);
@@ -31,7 +31,7 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     zoomSlider->setValue(100); // Default value (no zoom)
 
     QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->addWidget(label);
+    // layout->addWidget(label);
     layout->addWidget(startButton);
     layout->addWidget(stopButton);
     // Adding video setting buttons
