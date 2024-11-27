@@ -31,7 +31,15 @@ void CameraWorker::start()
     try
     {
         // Shared memory setup
-        shared_memory_object shm(open_or_create, "SharedFrame", read_write);
+        // string sharedMemoryName = "";
+        char camIndexChar[8];
+        sprintf(camIndexChar, "%d", cameraIndex);
+
+
+        char sharedMemoryName[32] = "SharedFrame";
+        strcat(sharedMemoryName, camIndexChar);
+        
+        shared_memory_object shm(open_or_create, sharedMemoryName, read_write);
         shm.truncate(640 * 480 * 3); // Assuming 640x480 resolution, 3 bytes per pixel (RGB)
         mapped_region region(shm, read_write);
         void *sharedMemory = region.get_address();
@@ -64,7 +72,7 @@ void CameraWorker::start()
             if (resizedFrame.total() * resizedFrame.elemSize() <= region.get_size())
             {
                 std::memcpy(sharedMemory, resizedFrame.data, resizedFrame.total() * resizedFrame.elemSize());
-                cout << "Frame written to shared memory" << endl;
+                cout << "Frame written to shared memory - Cam index: " << cameraIndex << endl;
             }
             else
             {
