@@ -1,5 +1,5 @@
-#include "MainWindow.h"
-#include "CameraWindow.h"
+#include "headers/MainWindow.h"
+#include "headers/CameraWindow.h"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QMessageBox>

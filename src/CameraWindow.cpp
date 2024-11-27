@@ -4,7 +4,7 @@
 #include <QPixmap>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "CameraWindow.h"
+#include "headers/CameraWindow.h"
 
 using namespace std;
 

@@ -18,17 +18,24 @@ INCLUDEPATH += \
     /usr/include/c++/11/backward \
     /usr/include/boost
 
+# Output directories
+DESTDIR = $$PWD/bin
+OBJECTS_DIR = $$PWD/build/obj
+MOC_DIR = $$PWD/build/moc
+RCC_DIR = $$PWD/build/rcc
+UI_DIR = $$PWD/build/ui
+
 # Sources and headers
 SOURCES += \
-    main.cpp \
-    Mainwindow.cpp \
-    CameraWorker.cpp \ 
-    CameraWindow.cpp
+    src/main.cpp \
+    src/Mainwindow.cpp \
+    src/CameraWorker.cpp \ 
+    src/CameraWindow.cpp
 
 HEADERS += \
-    MainWindow.h \
-    CameraWorker.h \
-    CameraWindow.h
+    headers/MainWindow.h \
+    headers/CameraWorker.h \
+    headers/CameraWindow.h
 
 # Link against Qt modules
 QT += core gui widgets

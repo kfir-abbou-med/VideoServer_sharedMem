@@ -1,4 +1,4 @@
-#include "CameraWorker.h"
+#include "headers/CameraWorker.h"
 #include <iostream>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
