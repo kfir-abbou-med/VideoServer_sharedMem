@@ -2,6 +2,7 @@
 #define CAMERAWORKER_H
 
 #include <QObject>
+#include <QThread> 
 #include <opencv2/opencv.hpp>
 #include <QImage>
 

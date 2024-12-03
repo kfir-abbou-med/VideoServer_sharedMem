@@ -1,9 +1,18 @@
 #include "headers/CameraWorker.h"
 #include "headers/FrameRateTracker.h"
+#include <opencv2/cudaarithm.hpp>
 #include <iostream>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <cstring>
+#include <opencv2/cudaarithm.hpp>
+#include <opencv2/cudawarping.hpp>
+
+#include <iomanip>
+#include <QDebug>
+
+#include <QObject>
+#include <QThread> // Add this include
 
 using namespace std;
 using namespace boost::interprocess;
@@ -16,96 +25,303 @@ CameraWorker::~CameraWorker()
     stop();
 }
 
+
+// void CameraWorker::start()
+// {
+//     if (isRunning)
+//         return;
+//     char sharedMemoryName[32];
+
+//     try
+//     {
+//         // Open camera
+//         capture.open(cameraIndex, cv::CAP_V4L2);
+
+//         if (!capture.isOpened())
+//         {
+//             emit errorOccurred(QString("Failed to open camera %1").arg(cameraIndex));
+//             return;
+//         }
+
+//         // Check CUDA availability
+//         if (cv::cuda::getCudaEnabledDeviceCount() == 0)
+//         {
+//             qDebug() << "CUDA is not available!";
+//             emit errorOccurred("CUDA is not available");
+//             return;
+//         }
+
+//         // Set specific camera properties
+//         capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+//         capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+
+//         // Prepare shared memory
+//         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", cameraIndex);
+
+//         // Remove existing shared memory segment
+//         boost::interprocess::shared_memory_object::remove(sharedMemoryName);
+
+//         // Calculate exact frame size
+//         const int width = 640;
+//         const int height = 480;
+//         const size_t channelSize = width * height;
+//         const size_t totalSize = channelSize * 3; // RGB channels
+
+//         // Create shared memory with precise size
+//         boost::interprocess::shared_memory_object shm(
+//             boost::interprocess::open_or_create,
+//             sharedMemoryName,
+//             boost::interprocess::read_write);
+
+//         // Truncate to exact frame size
+//         shm.truncate(totalSize);
+
+//         boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
+//         void *sharedMemory = region.get_address();
+
+//         isRunning = true;
+//         FrameRateTracker fpsTracker;
+
+//         // Prepare CUDA-related variables outside the loop
+//         cv::cuda::GpuMat gpuFrame, processedGpuFrame;
+//         cv::Mat processedCpuFrame;
+
+//         while (isRunning)
+//         {
+//             cv::Mat frame;
+//             if (!capture.read(frame) || frame.empty())
+//             {
+//                 qDebug() << "Failed to read frame from camera" << cameraIndex;
+//                 emit errorOccurred(QString("Failed to read frame from camera %1").arg(cameraIndex));
+//                 QThread::msleep(25);
+//                 continue;
+//             }
+
+//             try 
+//             {
+//                 // GPU Processing Pipeline
+//                 // 1. Upload frame to GPU
+//                 gpuFrame.upload(frame);
+
+//                 // 2. GPU Brightness Adjustment
+//                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0);
+
+//                 // 3. GPU Zoom (using CUDA resize)
+//                 if (zoomFactor != 1.0)
+//                 {
+//                     int zoomWidth = frame.cols / zoomFactor;
+//                     int zoomHeight = frame.rows / zoomFactor;
+                    
+//                     // Calculate zoom rectangle
+//                     int centerX = frame.cols / 2;
+//                     int centerY = frame.rows / 2;
+//                     cv::Rect zoomRect(
+//                         centerX - zoomWidth/2, 
+//                         centerY - zoomHeight/2, 
+//                         zoomWidth, 
+//                         zoomHeight
+//                     );
+
+//                     // Crop on GPU
+//                     cv::cuda::GpuMat gpuZoomedFrame;
+//                     cv::cuda::resize(processedGpuFrame(zoomRect), gpuZoomedFrame, frame.size());
+//                     processedGpuFrame = gpuZoomedFrame;
+//                 }
+
+//                 // 4. Download processed frame back to CPU
+//                 processedGpuFrame.download(processedCpuFrame);
+
+//                 // 5. Update FPS
+//                 fpsTracker.update();
+
+//                 // 6. Prepare FPS text
+//                 std::stringstream fpsText;
+//                 fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
+//                 cout << fpsText.str() << endl;
+
+//                 // 7. Write to shared memory
+//                 size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
+//                 if (frameSize <= region.get_size())
+//                 {
+//                     std::memcpy(sharedMemory, processedCpuFrame.data, frameSize);
+//                 }
+//                 else
+//                 {
+//                     qDebug() << "Frame size exceeds shared memory size!";
+//                 }
+//             }
+//             catch (const cv::Exception &e)
+//             {
+//                 qDebug() << "OpenCV CUDA Error:" << e.what();
+//                 emit errorOccurred(QString("OpenCV CUDA Error: %1").arg(e.what()));
+//                 break;
+//             }
+
+//             // Small delay to prevent excessive CPU usage
+//             cv::cuda::Stream::waitForCompletion(); // Ensure CUDA operations are complete
+//         }
+//     }
+//     catch (const std::exception &ex)
+//     {
+//         qDebug() << "Unexpected error:" << ex.what();
+//         emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
+//     }
+
+//     // Cleanup
+//     capture.release();
+//     boost::interprocess::shared_memory_object::remove(sharedMemoryName);
+//     isRunning = false;
+// }
+
+
 void CameraWorker::start()
 {
     if (isRunning)
         return;
-    cout << "Trying to capture video from index: " << cameraIndex << endl;
-    capture.open(cameraIndex, cv::CAP_V4L2);
-    if (!capture.isOpened())
-    {
-        emit errorOccurred(QString("Failed to open camera %1").arg(cameraIndex));
-        return;
-    }
-    cout << "Capture is open for index: " << cameraIndex << endl;
-    isRunning = true;
+    char sharedMemoryName[32];
+
     try
     {
-        // Shared memory setup
-        // string sharedMemoryName = "";
-        char camIndexChar[8];
-        sprintf(camIndexChar, "%d", cameraIndex);
+        // Open camera
+        capture.open(cameraIndex, cv::CAP_V4L2);
 
+        if (!capture.isOpened())
+        {
+            emit errorOccurred(QString("Failed to open camera %1").arg(cameraIndex));
+            return;
+        }
 
-        char sharedMemoryName[32] = "SharedFrame";
-        strcat(sharedMemoryName, camIndexChar);
-        
-        shared_memory_object shm(open_or_create, sharedMemoryName, read_write);
-        shm.truncate(640 * 480 * 3); // Assuming 640x480 resolution, 3 bytes per pixel (RGB)
-        mapped_region region(shm, read_write);
+        // Check CUDA availability
+        if (cv::cuda::getCudaEnabledDeviceCount() == 0)
+        {
+            qDebug() << "CUDA is not available!";
+            emit errorOccurred("CUDA is not available");
+            return;
+        }
+
+        // Set specific camera properties
+        capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+        capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+
+        // Prepare shared memory
+        snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", cameraIndex);
+
+        // Remove existing shared memory segment
+        boost::interprocess::shared_memory_object::remove(sharedMemoryName);
+
+        // Calculate exact frame size
+        const int width = 640;
+        const int height = 480;
+        const size_t channelSize = width * height;
+        const size_t totalSize = channelSize * 3; // RGB channels
+
+        // Create shared memory with precise size
+        boost::interprocess::shared_memory_object shm(
+            boost::interprocess::open_or_create,
+            sharedMemoryName,
+            boost::interprocess::read_write);
+
+        // Truncate to exact frame size
+        shm.truncate(totalSize);
+
+        boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
         void *sharedMemory = region.get_address();
+
+        isRunning = true;
         FrameRateTracker fpsTracker;
-        
+
+        // Create a CUDA stream for operations
+        cv::cuda::Stream stream;
+
+        // Prepare CUDA-related variables outside the loop
+        cv::cuda::GpuMat gpuFrame, processedGpuFrame;
+        cv::Mat processedCpuFrame;
+
         while (isRunning)
         {
-           
             cv::Mat frame;
             if (!capture.read(frame) || frame.empty())
             {
+                qDebug() << "Failed to read frame from camera" << cameraIndex;
                 emit errorOccurred(QString("Failed to read frame from camera %1").arg(cameraIndex));
+                QThread::msleep(25);
                 continue;
             }
 
-            // Apply brightness adjustment
-            frame.convertTo(frame, -1, brightnessFactor, 0);
-
-            // Update FPS tracker
-            fpsTracker.update();
-
-
-            // Apply zoom by cropping
-            int centerX = frame.cols / 2;
-            int centerY = frame.rows / 2;
-            int width = frame.cols / zoomFactor;
-            int height = frame.rows / zoomFactor;
-            cv::Rect zoomRect(centerX - width / 2, centerY - height / 2, width, height);
-            cv::Mat zoomedFrame = frame(zoomRect);
-
-            // Resize to the original size to fit the window
-            cv::Mat resizedFrame;
-            cv::resize(zoomedFrame, resizedFrame, cv::Size(frame.cols, frame.rows));
-            std::stringstream fpsText;
-            fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
-            cv::putText(resizedFrame, 
-                        fpsText.str(), 
-                        cv::Point(10, 30),  // Position of text
-                        cv::FONT_HERSHEY_SIMPLEX, 
-                        1.0,  // Font scale
-                        cv::Scalar(0, 255, 0),  // Green color
-                        2);  // Thickness
-
-            // Write frame to shared memory
-            if (resizedFrame.total() * resizedFrame.elemSize() <= region.get_size())
+            try 
             {
-                std::memcpy(sharedMemory, resizedFrame.data, resizedFrame.total() * resizedFrame.elemSize());
-                // cout << "Frame written to shared memory - Cam index: " << cameraIndex << endl;
+                // GPU Processing Pipeline
+                // 1. Upload frame to GPU
+                gpuFrame.upload(frame, stream);
+
+                // 2. GPU Brightness Adjustment
+                gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
+
+                // 3. GPU Zoom (using CUDA resize)
+                if (zoomFactor != 1.0)
+                {
+                    int zoomWidth = frame.cols / zoomFactor;
+                    int zoomHeight = frame.rows / zoomFactor;
+                    
+                    // Calculate zoom rectangle
+                    int centerX = frame.cols / 2;
+                    int centerY = frame.rows / 2;
+                    cv::Rect zoomRect(
+                        centerX - zoomWidth/2, 
+                        centerY - zoomHeight/2, 
+                        zoomWidth, 
+                        zoomHeight
+                    );
+
+                    // Crop on GPU
+                    cv::cuda::GpuMat gpuZoomedFrame;
+                    cv::cuda::resize(processedGpuFrame(zoomRect), gpuZoomedFrame, frame.size(), 0, 0, cv::INTER_LINEAR, stream);
+                    processedGpuFrame = gpuZoomedFrame;
+                }
+
+                // 4. Download processed frame back to CPU
+                processedGpuFrame.download(processedCpuFrame, stream);
+
+                // Synchronize the stream
+                stream.waitForCompletion();
+
+                // 5. Update FPS
+                fpsTracker.update();
+
+                // 6. Prepare FPS text
+                std::stringstream fpsText;
+                fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
+                cout << fpsText.str() << endl;
+
+                // 7. Write to shared memory
+                size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
+                if (frameSize <= region.get_size())
+                {
+                    std::memcpy(sharedMemory, processedCpuFrame.data, frameSize);
+                }
+                else
+                {
+                    qDebug() << "Frame size exceeds shared memory size!";
+                }
             }
-            else
+            catch (const cv::Exception &e)
             {
-                cerr << "Frame size exceeds shared memory region size!" << endl;
+                qDebug() << "OpenCV CUDA Error:" << e.what();
+                emit errorOccurred(QString("OpenCV CUDA Error: %1").arg(e.what()));
+                break;
             }
         }
     }
-    catch (interprocess_exception &ex)
+    catch (const std::exception &ex)
     {
-        cerr << "Shared memory error: " << ex.what() << endl;
-        emit errorOccurred(QString("Shared memory error: %1").arg(ex.what()));
+        qDebug() << "Unexpected error:" << ex.what();
+        emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
     }
 
+    // Cleanup
     capture.release();
-
-    // Cleanup shared memory
-    shared_memory_object::remove("SharedFrame");
+    boost::interprocess::shared_memory_object::remove(sharedMemoryName);
+    isRunning = false;
 }
 
 void CameraWorker::stop()
