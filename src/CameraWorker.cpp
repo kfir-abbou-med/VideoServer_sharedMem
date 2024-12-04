@@ -184,6 +184,12 @@ void CameraWorker::start()
     {
         // Open camera
         capture.open(cameraIndex, cv::CAP_V4L2);
+        capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+        capture.set(cv::CAP_PROP_BUFFERSIZE, 3);
+      // Set specific camera properties
+        capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+        capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+        capture.set(cv::CAP_PROP_FPS, 60);
 
         if (!capture.isOpened())
         {
@@ -199,10 +205,7 @@ void CameraWorker::start()
             return;
         }
 
-        // Set specific camera properties
-        capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-
+      
         // Prepare shared memory
         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", cameraIndex);
 
@@ -243,6 +246,7 @@ void CameraWorker::start()
             if (!capture.read(frame) || frame.empty())
             {
                 qDebug() << "Failed to read frame from camera" << cameraIndex;
+                cout << "Failed to read frame from camera" << cameraIndex << endl;
                 emit errorOccurred(QString("Failed to read frame from camera %1").arg(cameraIndex));
                 QThread::msleep(25);
                 continue;
