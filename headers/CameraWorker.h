@@ -32,6 +32,7 @@ signals:
 private:
     Communication::CommService commServiceMember;
     VideoSettingsManager settingsManager;
+    std::string currentSrcId;
     int cameraIndex;
     bool isRunning;
     cv::VideoCapture capture;

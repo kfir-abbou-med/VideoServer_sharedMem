@@ -31,17 +31,18 @@ CameraWorker::~CameraWorker()
     stop();
 }
 
-std::tuple<std::string, double> deserializeMessage(const std::string &message)
+std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
 {
     // Parse the JSON message
     auto jsonData = nlohmann::json::parse(message);
 
+    std::string sourceId = jsonData["sourceId"];
     std::string propertyName = jsonData["propertyName"];
     double propertyValue = jsonData["propertyValue"];
 
-    // cout << "deserializeMessage::propertyValue: " << propertyValue << endl;
+    cout << "deserializeMessage::sourceId: " << sourceId << endl;
     // Return as a tuple
-    return std::make_tuple(propertyName, propertyValue);
+    return std::make_tuple(sourceId, propertyName, propertyValue);
 }
 
 void CameraWorker::start()
@@ -58,18 +59,15 @@ void CameraWorker::start()
 
         server.setMessageReceivedCallback([this](const std::string &message)
                                           {
-                                              const auto &[propertyName, propertyValue] = deserializeMessage(message);
-                                              // cout << "received msg: " << message << "got value from message: " << propertyValue << endl;
-
-                                              settingsManager.UpdateSetting(cameraIndex, propertyName, propertyValue);
-
-                                              // brightnessFactor = propertyValue;
-                                              // std::cout << "Brightness updated to: " << brightnessFactor << " by: "<< propertyValue << std::endl;
+                                              const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
+                                              cout << "sourceId: " << sourceId << " received msg: " << message << "got value from message: " << propertyValue << endl;
+                                              currentSrcId = sourceId;
+                                              settingsManager.UpdateSetting(currentSrcId, propertyName, propertyValue);
                                           });
 
         server.start();
 
-        cout << "paasssssss" << endl;
+        cout << "trying to open cam index: " << cameraIndex << endl;
 
         // Open camera
         capture.open(cameraIndex, cv::CAP_V4L2);
@@ -143,7 +141,7 @@ void CameraWorker::start()
 
             try
             {
-                VideoSettings srcSettings = settingsManager.GetSettings(cameraIndex);
+                VideoSettings srcSettings = settingsManager.GetSettings(currentSrcId);
                 double zoomFactor = srcSettings.GetPropertyValue("zoom");
                 double brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
@@ -155,7 +153,7 @@ void CameraWorker::start()
                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
 
-                cout << "******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
+                // cout << "**** Video Source: " << cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
                 // 3. GPU Zoom (using CUDA resize)
                 if (zoomFactor != 1.0)
                 {
@@ -189,7 +187,7 @@ void CameraWorker::start()
                 // 6. Prepare FPS text
                 std::stringstream fpsText;
                 fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
-                cout << fpsText.str() << endl;
+                // cout << fpsText.str() << endl;
 
                 // 7. Write to shared memory
                 size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
@@ -226,15 +224,4 @@ void CameraWorker::stop()
 {
     isRunning = false;
 }
-
-// void CameraWorker::changeBrightness(double factor)
-// {
-//     // brightnessFactor = factor; // Update the brightness factor
-//     cout << "BRIGHTNESS -> factor: " << brightnessFactor << endl;
-// }
-
-// void CameraWorker::changeZoom(double factor)
-// {
-//     // zoomFactor = factor; // Update the zoom factor
-//     cout << "ZOOM -> factor: " << zoomFactor << endl;
-// }
+ 

@@ -5,6 +5,6 @@
 #include <tuple>
 
 // Function declaration for deserialization
-std::tuple<std::string, double> deserializeMessage(const std::string &message);
+std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message);
 
 #endif // MESSAGE_UTILS_H

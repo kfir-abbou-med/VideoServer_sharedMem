@@ -40,9 +40,8 @@ namespace Communication
 
             std::cout << "Server started on " << m_ip << ":" << m_port << std::endl;
 
-            workerThread = std::thread([this]() {
-                ioContext.run();
-            });
+            workerThread = std::thread([this]()
+                                       { ioContext.run(); });
 
             acceptConnections();
         }
@@ -73,7 +72,8 @@ namespace Communication
     void CommService::acceptConnections()
     {
         auto socket = std::make_shared<boost::asio::ip::tcp::socket>(ioContext);
-        acceptor.async_accept(*socket, [this, socket](const boost::system::error_code &error) {
+        acceptor.async_accept(*socket, [this, socket](const boost::system::error_code &error)
+                              {
             if (!error)
             {
                 // std::cout << "New client connected: " << socket->remote_endpoint() << std::endl;
@@ -87,14 +87,14 @@ namespace Communication
             if (isRunning)
             {
                 acceptConnections();
-            }
-        });
+            } });
     }
 
     void CommService::handleClient(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
     {
         auto buffer = std::make_shared<std::vector<char>>(1024);
-        socket->async_read_some(boost::asio::buffer(*buffer), [this, socket, buffer](const boost::system::error_code &error, std::size_t bytesTransferred) {
+        socket->async_read_some(boost::asio::buffer(*buffer), [this, socket, buffer](const boost::system::error_code &error, std::size_t bytesTransferred)
+                                {
             if (!error)
             {
                 std::string message(buffer->data(), bytesTransferred);
@@ -107,12 +107,12 @@ namespace Communication
 
                 // Keep listening for more messages from the same client
                 handleClient(socket);
+
             }
             else if (error != boost::asio::error::operation_aborted)
             {
                 std::cerr << "Client disconnected: " << error.message() << std::endl;
-            }
-        });
+            } });
     }
 
 } // namespace Communication

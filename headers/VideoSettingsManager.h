@@ -9,16 +9,16 @@
 class VideoSettingsManager {
 public:
     // Retrieve settings for a given source, create default if not found
-    VideoSettings GetSettings(int sourceKey);
+    VideoSettings GetSettings(std::string sourceKey);
 
     // Set or update settings for a given source
-    void SetSettings(int sourceKey, const VideoSettings& settings);
+    void SetSettings(std::string sourceKey, const VideoSettings& settings);
 
     // Update a specific setting for a source
-    bool UpdateSetting(int sourceKey, const std::string& settingName, double value);
+    bool UpdateSetting(std::string sourceKey, const std::string& settingName, double value);
 
     // Remove settings for a given source
-    void RemoveSource(int sourceKey);
+    void RemoveSource(std::string sourceKey);
 
     // Save all settings to a JSON file
     void SaveToFile(const std::string& filePath) const;
@@ -27,7 +27,7 @@ public:
     void LoadFromFile(const std::string& filePath);
 
 private:
-    std::unordered_map<int, VideoSettings> settingsMap; // Dictionary for video settings
+    std::unordered_map<std::string, VideoSettings> settingsMap; // Dictionary for video settings
     mutable std::mutex settingsMutex; // Mutex for thread-safety
 };
 

@@ -6,7 +6,7 @@
 // Using nlohmann::json
 using json = nlohmann::json;
 
-VideoSettings VideoSettingsManager::GetSettings(int sourceKey) {
+VideoSettings VideoSettingsManager::GetSettings(std::string sourceKey) {
     std::lock_guard<std::mutex> lock(settingsMutex);
     if (settingsMap.find(sourceKey) == settingsMap.end()) {
         settingsMap[sourceKey] = VideoSettings(); // Create default settings
@@ -14,12 +14,12 @@ VideoSettings VideoSettingsManager::GetSettings(int sourceKey) {
     return settingsMap[sourceKey];
 }
 
-void VideoSettingsManager::SetSettings(int sourceKey, const VideoSettings& settings) {
+void VideoSettingsManager::SetSettings(std::string sourceKey, const VideoSettings& settings) {
     std::lock_guard<std::mutex> lock(settingsMutex);
     settingsMap[sourceKey] = settings;
 }
 
-bool VideoSettingsManager::UpdateSetting(int sourceKey, const std::string& settingName, double value) {
+bool VideoSettingsManager::UpdateSetting(const std::string sourceKey, const std::string& settingName, double value) {
     std::lock_guard<std::mutex> lock(settingsMutex);
     auto it = settingsMap.find(sourceKey);
     if (it != settingsMap.end()) {
@@ -30,12 +30,13 @@ bool VideoSettingsManager::UpdateSetting(int sourceKey, const std::string& setti
         } else {
             return false; // Unknown setting
         }
+        std::cout << "sourceId: " << sourceKey << " prop: " << settingName << " val: " << value << " updated." << std::endl;
         return true;
     }
     return false; // Source not found
 }
 
-void VideoSettingsManager::RemoveSource(int sourceKey) {
+void VideoSettingsManager::RemoveSource(std::string sourceKey) {
     std::lock_guard<std::mutex> lock(settingsMutex);
     settingsMap.erase(sourceKey);
 }
@@ -44,7 +45,7 @@ void VideoSettingsManager::SaveToFile(const std::string& filePath) const {
     std::lock_guard<std::mutex> lock(settingsMutex);
     json j;
     for (const auto& [key, settings] : settingsMap) {
-        j[std::to_string(key)] = {{"brightness", settings.brightness}, {"zoom", settings.zoom}};
+        j[key] = {{"brightness", settings.brightness}, {"zoom", settings.zoom}};
     }
 
     std::ofstream file(filePath);
@@ -64,7 +65,7 @@ void VideoSettingsManager::LoadFromFile(const std::string& filePath) {
 
         settingsMap.clear();
         for (auto& [key, value] : j.items()) {
-            settingsMap[std::stoi(key)] = VideoSettings(
+            settingsMap[key] = VideoSettings(
                 value["brightness"].get<int>(),
                 value["zoom"].get<int>());
         }
