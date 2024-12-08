@@ -9,7 +9,7 @@ public:
     double zoom;
 
     // Constructor with default values
-    VideoSettings(double brightness = 100, double zoom = 100);
+    VideoSettings(double brightness = 1, double zoom = 1);
 
     // Get property value
     double GetPropertyValue(const std::string& propertyName) const;
