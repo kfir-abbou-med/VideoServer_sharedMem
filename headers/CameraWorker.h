@@ -14,7 +14,8 @@ class CameraWorker : public QObject {
     Q_OBJECT
 
 public:
-    explicit CameraWorker(int cameraIndex, QObject *parent = nullptr);
+    // explicit CameraWorker(int cameraIndex, QObject *parent = nullptr);
+    explicit CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManager, QObject *parent = nullptr);
     ~CameraWorker();
 
 public slots:
@@ -30,11 +31,12 @@ signals:
     void fpsUpdated(double fps);
 
 private:
-    Communication::CommService commServiceMember;
-    VideoSettingsManager settingsManager;
+    // Communication::CommService commServiceMember;
+    VideoSettingsManager& settingsManager;
     std::string currentSrcId;
     int cameraIndex;
     bool isRunning;
+    std::string sourceKey;
     cv::VideoCapture capture;
     double brightnessFactor;  
     double zoomFactor;        

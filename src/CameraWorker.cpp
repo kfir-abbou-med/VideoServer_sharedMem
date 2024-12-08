@@ -21,15 +21,55 @@ using json = nlohmann::json;
 using namespace std;
 using namespace boost::interprocess;
 
-CameraWorker::CameraWorker(int cameraIndex, QObject *parent)
-    : QObject(parent), cameraIndex(cameraIndex), isRunning(false), brightnessFactor(1.0), zoomFactor(1.0), commServiceMember("127.0.0.1", 9500)
-{
+// CameraWorker::CameraWorker(int cameraIndex, QObject *parent)
+//     : QObject(parent), cameraIndex(cameraIndex), isRunning(false), brightnessFactor(1.0), zoomFactor(1.0), commServiceMember("127.0.0.1", 9500)
+// {
+// }
+
+// CameraWorker::~CameraWorker()
+// {
+//     stop();
+// }
+
+CameraWorker::CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManagerRef, QObject* parent)
+    : QObject(parent),
+      cameraIndex(cameraIndex),
+      sourceKey(sourceKey),
+      isRunning(false),
+      brightnessFactor(1.0),
+      zoomFactor(1.0),
+      settingsManager(settingsManagerRef) {  
+    
+    // Register listener with VideoSettingsManager
+    settingsManagerRef.RegisterListener(sourceKey, [this](const VideoSettings& settings) {
+        brightnessFactor = settings.brightness;
+        zoomFactor = settings.zoom;
+    });
 }
 
-CameraWorker::~CameraWorker()
-{
+CameraWorker::~CameraWorker() {
+    // Unregister listener from VideoSettingsManager
+    settingsManager.UnregisterListener(sourceKey);
     stop();
 }
+
+
+// CameraWorker::CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManager,  QObject *parent)
+//     : QObject(parent), cameraIndex(cameraIndex), sourceKey(sourceKey), isRunning(false),
+//       brightnessFactor(1.0), zoomFactor(1.0), settingsManager(settingsManager) {
+//     // Register with VideoSettingsManager
+//     settingsManager.RegisterListener(sourceKey, [this](const VideoSettings &settings) {
+//         brightnessFactor = settings.brightness;
+//         zoomFactor = settings.zoom;
+//     });
+// }
+
+// CameraWorker::~CameraWorker() {
+//     // Unregister from VideoSettingsManager
+//     settingsManager.UnregisterListener(sourceKey);
+//     stop();
+// }
+
 
 std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
 {
@@ -55,17 +95,18 @@ void CameraWorker::start()
     try
     {
         // Open socket
-        Communication::CommService server("127.0.0.1", 8080);
+        // Communication::CommService server("127.0.0.1", 8080);
+        // auto settingsManager = new VideoSettingsManager("127.0.0.1", 8080);
 
-        server.setMessageReceivedCallback([this](const std::string &message)
-                                          {
-                                              const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
-                                              cout << "sourceId: " << sourceId << " received msg: " << message << "got value from message: " << propertyValue << endl;
-                                              currentSrcId = sourceId;
-                                              settingsManager.UpdateSetting(currentSrcId, propertyName, propertyValue);
-                                          });
+        // server.setMessageReceivedCallback([this](const std::string &message)
+        //                                   {
+        //                                       const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
+        //                                       cout << "sourceId: " << sourceId << " received msg: " << message << "got value from message: " << propertyValue << endl;
+        //                                       currentSrcId = sourceId;
+        //                                       settingsManager.UpdateSetting(currentSrcId, propertyName, propertyValue);
+        //                                   });
 
-        server.start();
+        // server.start();
 
         cout << "trying to open cam index: " << cameraIndex << endl;
 
@@ -153,7 +194,7 @@ void CameraWorker::start()
                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
 
-                // cout << "**** Video Source: " << cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
+                cout << "**** Video Source: " << cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
                 // 3. GPU Zoom (using CUDA resize)
                 if (zoomFactor != 1.0)
                 {
@@ -199,6 +240,7 @@ void CameraWorker::start()
                 {
                     qDebug() << "Frame size exceeds shared memory size!";
                 }
+                QThread::msleep(10);
             }
             catch (const cv::Exception &e)
             {
@@ -213,7 +255,10 @@ void CameraWorker::start()
         qDebug() << "Unexpected error:" << ex.what();
         emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
     }
-
+   catch (const runtime_error& e) {
+        // Handle divide by zero exception
+        cout << "Exception: " << e.what() << endl;
+    }
     // Cleanup
     capture.release();
     boost::interprocess::shared_memory_object::remove(sharedMemoryName);

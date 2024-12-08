@@ -40,14 +40,14 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     setLayout(layout);
 
     // Worker and thread setup
-    worker = new CameraWorker(cameraIndex);
-    workerThread = new QThread(this);
-    worker->moveToThread(workerThread);
+    // worker = new CameraWorker(cameraIndex, "shared");
+    // workerThread = new QThread(this);
+    // worker->moveToThread(workerThread);
 
-    connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
-    connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
-    // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
-    connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
+    // connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
+    // connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
+    // // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
+    // connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
 
     // Connect slider changes to the worker's change methods
     // connect(brightnessSlider, &QSlider::valueChanged, worker, &CameraWorker::changeBrightness);

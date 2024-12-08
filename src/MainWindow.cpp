@@ -27,47 +27,17 @@ void MainWindow::detectCameras()
 {
     int availableCameras[4] = {0, 4};
     int numCameras = 2; // Number of cameras in the array
+    VideoSettingsManager settingsManager("127.0.0.1", 8080);
 
     for (int i = 0; i < numCameras; i++)
     {
-        // cv::VideoCapture testCapture;
-        // cout << "trying to open cam in index: " << availableCameras[i] << endl;
+        int camIndex = availableCameras[i];
 
-        // // Set some properties to ensure compatibility
-        // testCapture.set(cv::CAP_PROP_FPS, 60);
-        // testCapture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        // testCapture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        // testCapture.open(availableCameras[i], cv::CAP_V4L2);
+        auto cameraWorker = new CameraWorker(camIndex, "SharedFrame" + std::to_string(camIndex), settingsManager);
+        auto workerThread = new QThread;
 
-        // if (!testCapture.isOpened()) {
-        //     cout << "Failed to open camera at index " << i << endl;
-        //     continue;
-        // }
-
-        // cv::Mat frame;
-        // if (!testCapture.read(frame)) {
-        //     cout << "Cannot read from camera at index " << i << endl;
-        //     testCapture.release();
-        //     continue;
-        // }
-
-        // if (frame.empty()) {
-        //     cout << "Captured frame is empty at index " << i << endl;
-        //     testCapture.release();
-        //     continue;
-        // }
-
-        // cout << "Successfully opened camera at index: " << i << endl;
-        // cout << "Frame size: " << frame.cols << "x" << frame.rows << endl;
-
-        // availableCameras.push_back(i);
-        // CameraWindow *cameraWindow = new CameraWindow(i);
-        auto cameraWorker = new CameraWorker(availableCameras[i]); // Pass the camera index
-        auto workerThread = new QThread(this);
-
-        // Move the worker to the thread
+        workerThread->setPriority(QThread::NormalPriority);
         cameraWorker->moveToThread(workerThread);
-
         // Start the worker when the thread starts
         connect(workerThread, &QThread::started, cameraWorker, &CameraWorker::start);
 

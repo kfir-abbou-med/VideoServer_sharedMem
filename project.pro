@@ -5,7 +5,9 @@ TARGET = CameraManager
 # TEMPLATE = app
 
 # Add C++ version
-CONFIG += c++11
+CONFIG += c++11 \
+          thread
+
 
 CUDA_DIR = /usr/local/cuda
 
@@ -77,7 +79,7 @@ HEADERS += \
 
 
 # Link against Qt modules
-QT += core gui widgets
+QT += core gui widgets concurrent
 
 # Link OpenCV and boost
 INCLUDEPATH += /usr/local/include/opencv4
@@ -102,4 +104,6 @@ LIBS += -L/usr/local/lib \
     -lcudart \
     -lboost_system \
     -lboost_filesystem \
-    -lrt  # shared memory library
+    -pthread \
+    -lrt # shared memory library
+    
