@@ -1,3 +1,5 @@
+/nlohmann
+
 # Ignore build directories
 /build/
 /bin/
