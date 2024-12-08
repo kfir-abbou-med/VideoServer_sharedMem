@@ -60,7 +60,9 @@ SOURCES += \
     src/CameraWorker.cpp \ 
     src/CameraWindow.cpp \
     src/FrameRateTracker.cpp \
-    src/CommService.cpp
+    src/CommService.cpp \
+    src/VideoSettingsManager.cpp \
+    src/VideoSettings.cpp
 .cpp
 
 HEADERS += \
@@ -69,7 +71,10 @@ HEADERS += \
     headers/CameraWindow.h \
     headers/FrameRateTracker.h \
     headers/CommService.h \
-    headers/MessageUtils.h
+    headers/MessageUtils.h \
+    headers/VideoSettingsManager.h \
+    headers/VideoSettings.h
+
 
 # Link against Qt modules
 QT += core gui widgets

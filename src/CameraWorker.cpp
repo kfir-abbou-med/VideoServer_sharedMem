@@ -30,7 +30,7 @@ CameraWorker::~CameraWorker()
 {
     stop();
 }
- 
+
 std::tuple<std::string, double> deserializeMessage(const std::string &message)
 {
     // Parse the JSON message
@@ -39,8 +39,8 @@ std::tuple<std::string, double> deserializeMessage(const std::string &message)
     std::string propertyName = jsonData["propertyName"];
     double propertyValue = jsonData["propertyValue"];
 
-    cout << "deserializeMessage::propertyValue: " << propertyValue << endl;
-    // Return as a tuple 
+    // cout << "deserializeMessage::propertyValue: " << propertyValue << endl;
+    // Return as a tuple
     return std::make_tuple(propertyName, propertyValue);
 }
 
@@ -56,15 +56,16 @@ void CameraWorker::start()
         // Open socket
         Communication::CommService server("127.0.0.1", 8080);
 
-         server.setMessageReceivedCallback([this](const std::string &message) {
-            const auto& [propertyName, propertyValue] = deserializeMessage(message);
-            cout << "received msg: " << message << "got value from message: " << propertyValue << endl;
-            if (propertyName == "brightness") {
-                brightnessFactor = propertyValue;
-                std::cout << "Brightness updated to: " << brightnessFactor << " by: "<< propertyValue << std::endl;
-            }
-        });
+        server.setMessageReceivedCallback([this](const std::string &message)
+                                          {
+                                              const auto &[propertyName, propertyValue] = deserializeMessage(message);
+                                              // cout << "received msg: " << message << "got value from message: " << propertyValue << endl;
 
+                                              settingsManager.UpdateSetting(cameraIndex, propertyName, propertyValue);
+
+                                              // brightnessFactor = propertyValue;
+                                              // std::cout << "Brightness updated to: " << brightnessFactor << " by: "<< propertyValue << std::endl;
+                                          });
 
         server.start();
 
@@ -142,6 +143,10 @@ void CameraWorker::start()
 
             try
             {
+                VideoSettings srcSettings = settingsManager.GetSettings(cameraIndex);
+                double zoomFactor = srcSettings.GetPropertyValue("zoom");
+                double brightnessFactor = srcSettings.GetPropertyValue("brightness");
+
                 // GPU Processing Pipeline
                 // 1. Upload frame to GPU
                 gpuFrame.upload(frame, stream);
@@ -149,6 +154,8 @@ void CameraWorker::start()
                 // 2. GPU Brightness Adjustment
                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
+
+                cout << "******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
                 // 3. GPU Zoom (using CUDA resize)
                 if (zoomFactor != 1.0)
                 {
@@ -220,14 +227,14 @@ void CameraWorker::stop()
     isRunning = false;
 }
 
-void CameraWorker::changeBrightness(double factor)
-{
-    // brightnessFactor = factor; // Update the brightness factor  
-    cout << "BRIGHTNESS -> factor: " << brightnessFactor << endl;
-}
+// void CameraWorker::changeBrightness(double factor)
+// {
+//     // brightnessFactor = factor; // Update the brightness factor
+//     cout << "BRIGHTNESS -> factor: " << brightnessFactor << endl;
+// }
 
-void CameraWorker::changeZoom(double factor)
-{
-    // zoomFactor = factor; // Update the zoom factor
-    cout << "ZOOM -> factor: " << zoomFactor << endl;
-}
+// void CameraWorker::changeZoom(double factor)
+// {
+//     // zoomFactor = factor; // Update the zoom factor
+//     cout << "ZOOM -> factor: " << zoomFactor << endl;
+// }

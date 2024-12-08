@@ -64,16 +64,16 @@ void CameraWindow::updateFrame(const QImage &image) {
     label->setPixmap(QPixmap::fromImage(image));
 }
  
-void CameraWindow::onBrightnessSliderValueChanged(int value) {
-    worker->changeBrightness(value / 100.0); // Map the slider value (0-200) to a factor (0.0-2.0)
-}
+// void CameraWindow::onBrightnessSliderValueChanged(int value) {
+//     worker->changeBrightness(value / 100.0); // Map the slider value (0-200) to a factor (0.0-2.0)
+// }
 
 
-void CameraWindow::onZoomSliderValueChanged(int value) {
+// void CameraWindow::onZoomSliderValueChanged(int value) {
 
-    worker->changeZoom(value / 100.0); // Map the slider value (50-150) to a zoom factor (0.5-1.5)
+//     worker->changeZoom(value / 100.0); // Map the slider value (50-150) to a zoom factor (0.5-1.5)
 
-}
+// }
 
 void CameraWindow::handleWorkerError(const QString &error) {
     label->setText(error);

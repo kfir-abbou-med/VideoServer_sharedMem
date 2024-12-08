@@ -76,7 +76,7 @@ namespace Communication
         acceptor.async_accept(*socket, [this, socket](const boost::system::error_code &error) {
             if (!error)
             {
-                std::cout << "New client connected: " << socket->remote_endpoint() << std::endl;
+                // std::cout << "New client connected: " << socket->remote_endpoint() << std::endl;
                 handleClient(socket);
             }
             else

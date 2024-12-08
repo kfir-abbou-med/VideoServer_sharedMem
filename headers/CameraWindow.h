@@ -20,8 +20,8 @@ public:
 
 private slots:
     void updateFrame(const QImage &image);
-    void onBrightnessSliderValueChanged(int value);
-    void onZoomSliderValueChanged(int value);
+    // void onBrightnessSliderValueChanged(int value);
+    // void onZoomSliderValueChanged(int value);
     void handleWorkerError(const QString &error);
 
 private:

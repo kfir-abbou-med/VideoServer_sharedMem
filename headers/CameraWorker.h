@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <QImage>
 #include <headers/CommService.h>
+#include <headers/VideoSettingsManager.h>
 #include <string>
 #include <tuple>
 
@@ -19,8 +20,8 @@ public:
 public slots:
     void start();
     void stop();
-    void changeBrightness(double factor);
-    void changeZoom(double factor);
+    // void changeBrightness(double factor);
+    // void changeZoom(double factor);
 
 signals:
     void onMessageReceived(const std::string &message);
@@ -30,6 +31,7 @@ signals:
 
 private:
     Communication::CommService commServiceMember;
+    VideoSettingsManager settingsManager;
     int cameraIndex;
     bool isRunning;
     cv::VideoCapture capture;
