@@ -22,21 +22,21 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     stopButton->setEnabled(false);
 
     // Create sliders for brightness and zoom
-    brightnessSlider = new QSlider(Qt::Horizontal, this);
-    brightnessSlider->setRange(0, 200);  // 0 to 200 for brightness factor adjustment
-    brightnessSlider->setValue(100); // Default value (normal brightness)
+    // brightnessSlider = new QSlider(Qt::Horizontal, this);
+    // brightnessSlider->setRange(0, 200);  // 0 to 200 for brightness factor adjustment
+    // brightnessSlider->setValue(100); // Default value (normal brightness)
 
-    zoomSlider = new QSlider(Qt::Horizontal, this);
-    zoomSlider->setRange(100, 200);  // 50% to 150% zoom
-    zoomSlider->setValue(100); // Default value (no zoom)
+    // zoomSlider = new QSlider(Qt::Horizontal, this);
+    // zoomSlider->setRange(100, 200);  // 50% to 150% zoom
+    // zoomSlider->setValue(100); // Default value (no zoom)
 
     QVBoxLayout *layout = new QVBoxLayout(this);
     // layout->addWidget(label);
     layout->addWidget(startButton);
     layout->addWidget(stopButton);
     // Adding video setting buttons
-    layout->addWidget(brightnessSlider);
-    layout->addWidget(zoomSlider);
+    // layout->addWidget(brightnessSlider);
+    // layout->addWidget(zoomSlider);
     setLayout(layout);
 
     // Worker and thread setup
@@ -52,8 +52,8 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     // Connect slider changes to the worker's change methods
     // connect(brightnessSlider, &QSlider::valueChanged, worker, &CameraWorker::changeBrightness);
     // connect(zoomSlider, &QSlider::valueChanged, worker, &CameraWorker::changeZoom);
-    connect(brightnessSlider, &QSlider::valueChanged, this, &CameraWindow::onBrightnessSliderValueChanged);
-    connect(zoomSlider, &QSlider::valueChanged, this, &CameraWindow::onZoomSliderValueChanged);
+    // connect(brightnessSlider, &QSlider::valueChanged, this, &CameraWindow::onBrightnessSliderValueChanged);
+    // connect(zoomSlider, &QSlider::valueChanged, this, &CameraWindow::onZoomSliderValueChanged);
 
     connect(workerThread, &QThread::finished, worker, &CameraWorker::deleteLater);
     workerThread->start();

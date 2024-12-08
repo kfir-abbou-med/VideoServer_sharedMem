@@ -59,14 +59,17 @@ SOURCES += \
     src/Mainwindow.cpp \
     src/CameraWorker.cpp \ 
     src/CameraWindow.cpp \
-    src/FrameRateTracker.cpp
+    src/FrameRateTracker.cpp \
+    src/CommService.cpp
 .cpp
 
 HEADERS += \
     headers/MainWindow.h \
     headers/CameraWorker.h \
     headers/CameraWindow.h \
-    headers/FrameRateTracker.h
+    headers/FrameRateTracker.h \
+    headers/CommService.h \
+    headers/MessageUtils.h
 
 # Link against Qt modules
 QT += core gui widgets
