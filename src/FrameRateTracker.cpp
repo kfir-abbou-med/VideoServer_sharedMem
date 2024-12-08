@@ -14,7 +14,7 @@ FrameRateTracker::FrameRateTracker()
 void FrameRateTracker::update()
 {
     frameCount++;
-    cout << "[FrameRateTracker::update] Count: " << frameCount << endl;
+    // cout << "[FrameRateTracker::update] Count: " << frameCount << endl;
     if (frameCount >= UPDATE_INTERVAL)
     {
         auto currentTime = std::chrono::steady_clock::now();

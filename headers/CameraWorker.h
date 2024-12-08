@@ -5,6 +5,9 @@
 #include <QThread> 
 #include <opencv2/opencv.hpp>
 #include <QImage>
+#include <headers/CommService.h>
+#include <string>
+#include <tuple>
 
 class CameraWorker : public QObject {
     Q_OBJECT
@@ -20,11 +23,13 @@ public slots:
     void changeZoom(double factor);
 
 signals:
+    void onMessageReceived(const std::string &message);
     void frameReady(const QImage &image);
     void errorOccurred(const QString &error);
     void fpsUpdated(double fps);
 
 private:
+    Communication::CommService commServiceMember;
     int cameraIndex;
     bool isRunning;
     cv::VideoCapture capture;

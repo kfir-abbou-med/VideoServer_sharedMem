@@ -30,26 +30,17 @@ void MainWindow::detectCameras()
     for (int i = 0; i < 4; ++i) {
         cv::VideoCapture testCapture;
         cout << "trying to open cam in index: " << i << endl;
-        // Explicitly set VideoCapture backend
-       
+
         // Set some properties to ensure compatibility
         testCapture.set(cv::CAP_PROP_FPS, 60);
         testCapture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
         testCapture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
         testCapture.open(i, cv::CAP_V4L2);
       
-        // testCapture.open("v4l2src ! video/x-raw,format=(string)BGR,width=640,height=480 ! videoconvert ! appsink", cv::CAP_GSTREAMER);
-
-        
         if (!testCapture.isOpened()) {
             cout << "Failed to open camera at index " << i << endl;
             continue;
         }
-
-        // // Set some properties to ensure compatibility
-        // testCapture.set(cv::CAP_PROP_FPS, 60);
-        // testCapture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        // testCapture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
 
         cv::Mat frame;
         if (!testCapture.read(frame)) {
@@ -72,9 +63,4 @@ void MainWindow::detectCameras()
         cameraWindow->show();
         testCapture.release();
     }
-
-    // if (availableCameras.empty()) {
-    //     QMessageBox::warning(this, "No Cameras Found", "No available cameras were detected!");
-    //     return;
-    // }
 }
