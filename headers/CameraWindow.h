@@ -19,7 +19,7 @@ public:
     ~CameraWindow();
 
 private slots:
-    void updateFrame(const QImage &image);
+    // void updateFrame(const QImage &image);
     // void onBrightnessSliderValueChanged(int value);
     // void onZoomSliderValueChanged(int value);
     void handleWorkerError(const QString &error);
@@ -28,8 +28,8 @@ private:
     QLabel *label;
     QPushButton *startButton;
     QPushButton *stopButton;
-    QSlider *brightnessSlider;
-    QSlider *zoomSlider;
+    // QSlider *brightnessSlider;
+    // QSlider *zoomSlider;
     CameraWorker *worker;
     QThread *workerThread;
     double brightnessFactor;

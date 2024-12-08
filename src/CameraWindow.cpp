@@ -46,7 +46,7 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
 
     connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
     connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
-    connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
+    // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
     connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
 
     // Connect slider changes to the worker's change methods
@@ -59,10 +59,10 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     workerThread->start();
 }
 
-void CameraWindow::updateFrame(const QImage &image) {
-    // Update the label with the new frame
-    label->setPixmap(QPixmap::fromImage(image));
-}
+// void CameraWindow::updateFrame(const QImage &image) {
+//     // Update the label with the new frame
+//     label->setPixmap(QPixmap::fromImage(image));
+// }
  
 // void CameraWindow::onBrightnessSliderValueChanged(int value) {
 //     worker->changeBrightness(value / 100.0); // Map the slider value (0-200) to a factor (0.0-2.0)
