@@ -29,7 +29,7 @@ void MainWindow::detectCameras()
     auto commService = new Communication::CommService("127.0.0.1", 8080);
     auto settingsManager = new VideoSettingsManager(*commService);
     std::vector<int> availableCameras;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 8; ++i) {
         cv::VideoCapture testCapture;
         cout << "trying to open cam in index: " << i << endl;
 

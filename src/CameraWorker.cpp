@@ -227,7 +227,7 @@ void CameraWorker::start()
                 // 6. Prepare FPS text
                 std::stringstream fpsText;
                 fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
-                // cout << fpsText.str() << endl;
+                cout << fpsText.str() << " -> " << sharedMemoryName << endl;
 
                 // 7. Write to shared memory
                 size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
