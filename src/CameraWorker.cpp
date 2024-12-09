@@ -19,43 +19,41 @@
 using json = nlohmann::json;
 using namespace std;
 using namespace boost::interprocess;
- 
 
-CameraWorker::CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManagerRef, QObject* parent)
+CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, VideoSettingsManager &settingsManagerRef, QObject *parent)
     : QObject(parent),
       m_cameraIndex(cameraIndex),
       sourceKey(sourceKey),
       isRunning(false),
       brightnessFactor(1.0),
       zoomFactor(1.0),
-      m_settingsManager(settingsManagerRef) {  
-    
-    // Register listener with VideoSettingsManager
-    // settingsManagerRef.RegisterListener(sourceKey, [this](const VideoSettings& settings) {
-    //     // brightnessFactor = settings.brightness;
-    //     // zoomFactor = settings.zoom;
+      m_settingsManager(settingsManagerRef)
+{
 
-    //     // settingsManager.UpdateSetting()
-    // });
+    // Register listener with VideoSettingsManager
+    settingsManagerRef.RegisterListener(sourceKey, [this](const std::string &message)
+                                        { handleMessage(message); });
 }
 
+// CameraWorker::CameraWorker(int cameraIndex, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){
 
-// CameraWorker::CameraWorker(int cameraIndex, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){  
-    
 // }
 
-CameraWorker::CameraWorker(int cameraIndex,  VideoSettingsManager& settingsManager, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){  
-    
+CameraWorker::CameraWorker(int cameraIndex, VideoSettingsManager &settingsManager, QObject *parent) : QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager)
+{
 }
 
-
-
-CameraWorker::~CameraWorker() {
+CameraWorker::~CameraWorker()
+{
     // Unregister listener from VideoSettingsManager
     m_settingsManager.UnregisterListener(sourceKey);
     stop();
 }
 
+void CameraWorker::handleMessage(const std::string &message)
+{
+    cout << "Message received on worker..." << message << endl;
+}
 
 std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
 {
@@ -74,8 +72,12 @@ std::tuple<std::string, std::string, double> deserializeMessage(const std::strin
 void CameraWorker::start()
 {
     cout << "CameraWorker::start" << endl;
+
     if (isRunning)
+    {
+        cout << "IsRunnning is true" << endl;
         return;
+    }
     char sharedMemoryName[32];
 
     try
@@ -122,6 +124,10 @@ void CameraWorker::start()
 
         // Prepare shared memory
         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
+
+        std::cout << "add default video settings: " << std::endl;
+        auto setting = VideoSettings();
+        m_settingsManager.SetSettings(sharedMemoryName, setting);
 
         // Remove existing shared memory segment
         boost::interprocess::shared_memory_object::remove(sharedMemoryName);
@@ -179,8 +185,7 @@ void CameraWorker::start()
                 // 2. GPU Brightness Adjustment
                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
-
-                cout << "**** Video Source: " << m_cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
+                // cout << "**** Video Source: " << m_cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
                 // 3. GPU Zoom (using CUDA resize)
                 if (zoomFactor != 1.0)
                 {
@@ -241,7 +246,8 @@ void CameraWorker::start()
         qDebug() << "Unexpected error:" << ex.what();
         emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
     }
-   catch (const runtime_error& e) {
+    catch (const runtime_error &e)
+    {
         // Handle divide by zero exception
         cout << "Exception: " << e.what() << endl;
     }
@@ -255,4 +261,3 @@ void CameraWorker::stop()
 {
     isRunning = false;
 }
- 

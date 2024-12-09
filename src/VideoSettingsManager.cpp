@@ -2,6 +2,8 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <bits/stdc++.h>
+
 
 // Using nlohmann::json
 using json = nlohmann::json;
@@ -24,11 +26,11 @@ VideoSettingsManager::~VideoSettingsManager()
 //     m_listenersMap[sourceKey] = callback;
 // }
 
-void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const std::string, const std::string&)> callback) {
+void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const std::string &)> callback)
+{
     std::lock_guard<std::mutex> lock(m_settingsMutex);
     m_listenersMap[sourceKey] = callback;
 }
-
 
 // void VideoSettingsManager::UnregisterListener(const std::string &sourceKey)
 void VideoSettingsManager::UnregisterListener(std::string sourceKey)
@@ -37,8 +39,11 @@ void VideoSettingsManager::UnregisterListener(std::string sourceKey)
     m_listenersMap.erase(sourceKey);
 }
 
-void VideoSettingsManager::onMessageReceived(const std::string& message) {
-    try {
+void VideoSettingsManager::onMessageReceived(const std::string &message)
+{
+    try
+    {
+        // std::cout << message << std::endl;
         // Parse the JSON message
         auto jsonData = json::parse(message);
         auto sourceId = jsonData.at("sourceId");
@@ -47,11 +52,22 @@ void VideoSettingsManager::onMessageReceived(const std::string& message) {
 
         std::lock_guard<std::mutex> lock(m_settingsMutex);
         auto it = m_listenersMap.find(sourceId);
-        if (it != m_listenersMap.end()) {
-            // Fire the listener callback
-            it->second(sourceId, message);
+
+        std::cout << "check for: " << sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
+        for (auto const &x : m_listenersMap)
+        {
+            std::cout << x.first << std::endl;
         }
-    } catch (const std::exception& ex) {
+
+        if (it != m_listenersMap.end())
+        {
+            // Fire the listener callback
+            std::cout << "msg received in settings manager " << message << std::endl;
+            it->second(message);
+        }
+    }
+    catch (const std::exception &ex)
+    {
         std::cerr << "Failed to process message: " << ex.what() << std::endl;
     }
 }
