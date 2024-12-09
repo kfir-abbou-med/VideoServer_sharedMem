@@ -3,12 +3,12 @@
 #include "headers/CommService.h"
 #include "headers/MessageUtils.h"
 #include <opencv2/cudaarithm.hpp>
-#include <iostream>
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/mapped_region.hpp>
-#include <cstring>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudawarping.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <iostream>
+#include <cstring>
 #include <nlohmann/json.hpp>
 #include <iomanip>
 #include <QDebug>

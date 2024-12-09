@@ -1,8 +1,12 @@
 #include "headers/MainWindow.h"
-#include "headers/CameraWindow.h"
+#include "headers/CommService.h"
+#include "headers/VideoSettingsManager.h"
+#include "headers/CameraWorker.h"
+// #include "headers/CameraWindow.h"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QThread>
 #include <opencv2/opencv.hpp>
 #include <iostream>
 

@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <vector>
-#include "CameraWindow.h"    
+// #include "CameraWindow.h"    
 
 class MainWindow : public QWidget
 {
@@ -13,7 +13,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-    CameraWindow *cameraWindow;
+    // CameraWindow *cameraWindow;
 
 private slots:
     void detectCameras();
