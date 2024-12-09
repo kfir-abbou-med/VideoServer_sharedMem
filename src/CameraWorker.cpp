@@ -29,10 +29,6 @@ CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, VideoS
       zoomFactor(1.0),
       m_settingsManager(settingsManagerRef)
 {
-
-    // Register listener with VideoSettingsManager
-    settingsManagerRef.RegisterListener(sourceKey, [this](const std::string &message)
-                                        { handleMessage(message); });
 }
 
 // CameraWorker::CameraWorker(int cameraIndex, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){
@@ -82,20 +78,6 @@ void CameraWorker::start()
 
     try
     {
-        // Open socket
-        // Communication::CommService server("127.0.0.1", 8080);
-        // auto settingsManager = new VideoSettingsManager("127.0.0.1", 8080);
-
-        // server.setMessageReceivedCallback([this](const std::string &message)
-        //                                   {
-        //                                       const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
-        //                                       cout << "sourceId: " << sourceId << " received msg: " << message << "got value from message: " << propertyValue << endl;
-        //                                       currentSrcId = sourceId;
-        //                                       settingsManager.UpdateSetting(currentSrcId, propertyName, propertyValue);
-        //                                   });
-
-        // server.start();
-
         cout << "trying to open cam index: " << m_cameraIndex << endl;
 
         // Open camera
@@ -128,6 +110,10 @@ void CameraWorker::start()
         std::cout << "add default video settings: " << std::endl;
         auto setting = VideoSettings();
         m_settingsManager.SetSettings(sharedMemoryName, setting);
+        
+        // Register listener with VideoSettingsManager
+        m_settingsManager.RegisterListener(sharedMemoryName, [this](const std::string &message)
+                                            { handleMessage(message); });
 
         // Remove existing shared memory segment
         boost::interprocess::shared_memory_object::remove(sharedMemoryName);

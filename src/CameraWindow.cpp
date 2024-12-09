@@ -19,7 +19,7 @@ CameraWindow::CameraWindow(int cameraIndex, VideoSettingsManager& settingsManage
 
     startButton = new QPushButton("Start", this);
     stopButton = new QPushButton("Stop", this);
-    stopButton->setEnabled(false);
+    // stopButton->setEnabled(false);
 
     // Create sliders for brightness and zoom
     // brightnessSlider = new QSlider(Qt::Horizontal, this);
@@ -47,9 +47,9 @@ CameraWindow::CameraWindow(int cameraIndex, VideoSettingsManager& settingsManage
 
     connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
     connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
-    // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
     connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
 
+    // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
     // Connect slider changes to the worker's change methods
     // connect(brightnessSlider, &QSlider::valueChanged, worker, &CameraWorker::changeBrightness);
     // connect(zoomSlider, &QSlider::valueChanged, worker, &CameraWorker::changeZoom);

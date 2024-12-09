@@ -28,6 +28,7 @@ VideoSettingsManager::~VideoSettingsManager()
 
 void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const std::string &)> callback)
 {
+    std::cout << "Register with source id: " << sourceKey << std::endl;
     std::lock_guard<std::mutex> lock(m_settingsMutex);
     m_listenersMap[sourceKey] = callback;
 }
@@ -43,7 +44,7 @@ void VideoSettingsManager::onMessageReceived(const std::string &message)
 {
     try
     {
-        // std::cout << message << std::endl;
+        std::cout << "onMessageReceived: " << message << std::endl;
         // Parse the JSON message
         auto jsonData = json::parse(message);
         auto sourceId = jsonData.at("sourceId");
@@ -86,6 +87,7 @@ void VideoSettingsManager::SetSettings(const std::string sourceKey, const VideoS
 {
     std::lock_guard<std::mutex> lock(m_settingsMutex);
     m_settingsMap[sourceKey] = settings;
+    std::cout << "setting add by key: " << sourceKey << std::endl;
 }
 
 bool VideoSettingsManager::UpdateSetting(const std::string sourceKey, const std::string &settingName, double value)
