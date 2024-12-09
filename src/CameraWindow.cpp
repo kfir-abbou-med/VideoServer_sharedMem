@@ -8,8 +8,8 @@
 
 using namespace std;
 
-CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
-    : QWidget(parent), worker(nullptr), workerThread(nullptr), brightnessFactor(1.0), zoomFactor(1.0), cameraIndex(cameraIndex){
+CameraWindow::CameraWindow(int cameraIndex, VideoSettingsManager& settingsManager, QWidget *parent)
+    : QWidget(parent), worker(nullptr), workerThread(nullptr), brightnessFactor(1.0), zoomFactor(1.0), cameraIndex(cameraIndex), m_settingsManager(settingsManager){
     setWindowTitle(QString("Camera %1").arg(cameraIndex));
     setFixedSize(200, 200);
 
@@ -40,14 +40,15 @@ CameraWindow::CameraWindow(int cameraIndex, QWidget *parent)
     setLayout(layout);
 
     // Worker and thread setup
-    // worker = new CameraWorker(cameraIndex, "shared");
-    // workerThread = new QThread(this);
-    // worker->moveToThread(workerThread);
 
-    // connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
-    // connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
-    // // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
-    // connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
+    worker = new CameraWorker(cameraIndex, m_settingsManager);
+    workerThread = new QThread(this);
+    worker->moveToThread(workerThread);
+
+    connect(startButton, &QPushButton::clicked, worker, &CameraWorker::start);
+    connect(stopButton, &QPushButton::clicked, worker, &CameraWorker::stop);
+    // connect(worker, &CameraWorker::frameReady, this, &CameraWindow::updateFrame);
+    connect(worker, &CameraWorker::errorOccurred, this, &CameraWindow::handleWorkerError);
 
     // Connect slider changes to the worker's change methods
     // connect(brightnessSlider, &QSlider::valueChanged, worker, &CameraWorker::changeBrightness);

@@ -17,58 +17,44 @@
 #include <QThread>
 
 using json = nlohmann::json;
-
 using namespace std;
 using namespace boost::interprocess;
-
-// CameraWorker::CameraWorker(int cameraIndex, QObject *parent)
-//     : QObject(parent), cameraIndex(cameraIndex), isRunning(false), brightnessFactor(1.0), zoomFactor(1.0), commServiceMember("127.0.0.1", 9500)
-// {
-// }
-
-// CameraWorker::~CameraWorker()
-// {
-//     stop();
-// }
+ 
 
 CameraWorker::CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManagerRef, QObject* parent)
     : QObject(parent),
-      cameraIndex(cameraIndex),
+      m_cameraIndex(cameraIndex),
       sourceKey(sourceKey),
       isRunning(false),
       brightnessFactor(1.0),
       zoomFactor(1.0),
-      settingsManager(settingsManagerRef) {  
+      m_settingsManager(settingsManagerRef) {  
     
     // Register listener with VideoSettingsManager
-    settingsManagerRef.RegisterListener(sourceKey, [this](const VideoSettings& settings) {
-        brightnessFactor = settings.brightness;
-        zoomFactor = settings.zoom;
-    });
+    // settingsManagerRef.RegisterListener(sourceKey, [this](const VideoSettings& settings) {
+    //     // brightnessFactor = settings.brightness;
+    //     // zoomFactor = settings.zoom;
+
+    //     // settingsManager.UpdateSetting()
+    // });
 }
+
+
+// CameraWorker::CameraWorker(int cameraIndex, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){  
+    
+// }
+
+CameraWorker::CameraWorker(int cameraIndex,  VideoSettingsManager& settingsManager, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){  
+    
+}
+
+
 
 CameraWorker::~CameraWorker() {
     // Unregister listener from VideoSettingsManager
-    settingsManager.UnregisterListener(sourceKey);
+    m_settingsManager.UnregisterListener(sourceKey);
     stop();
 }
-
-
-// CameraWorker::CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManager,  QObject *parent)
-//     : QObject(parent), cameraIndex(cameraIndex), sourceKey(sourceKey), isRunning(false),
-//       brightnessFactor(1.0), zoomFactor(1.0), settingsManager(settingsManager) {
-//     // Register with VideoSettingsManager
-//     settingsManager.RegisterListener(sourceKey, [this](const VideoSettings &settings) {
-//         brightnessFactor = settings.brightness;
-//         zoomFactor = settings.zoom;
-//     });
-// }
-
-// CameraWorker::~CameraWorker() {
-//     // Unregister from VideoSettingsManager
-//     settingsManager.UnregisterListener(sourceKey);
-//     stop();
-// }
 
 
 std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
@@ -108,10 +94,10 @@ void CameraWorker::start()
 
         // server.start();
 
-        cout << "trying to open cam index: " << cameraIndex << endl;
+        cout << "trying to open cam index: " << m_cameraIndex << endl;
 
         // Open camera
-        capture.open(cameraIndex, cv::CAP_V4L2);
+        capture.open(m_cameraIndex, cv::CAP_V4L2);
         capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
         capture.set(cv::CAP_PROP_BUFFERSIZE, 3);
 
@@ -122,7 +108,7 @@ void CameraWorker::start()
 
         if (!capture.isOpened())
         {
-            emit errorOccurred(QString("Failed to open camera %1").arg(cameraIndex));
+            emit errorOccurred(QString("Failed to open camera %1").arg(m_cameraIndex));
             return;
         }
 
@@ -135,7 +121,7 @@ void CameraWorker::start()
         }
 
         // Prepare shared memory
-        snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", cameraIndex);
+        snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
 
         // Remove existing shared memory segment
         boost::interprocess::shared_memory_object::remove(sharedMemoryName);
@@ -173,16 +159,16 @@ void CameraWorker::start()
             cv::Mat frame;
             if (!capture.read(frame) || frame.empty())
             {
-                qDebug() << "Failed to read frame from camera" << cameraIndex;
-                cout << "Failed to read frame from camera" << cameraIndex << endl;
-                emit errorOccurred(QString("Failed to read frame from camera %1").arg(cameraIndex));
+                qDebug() << "Failed to read frame from camera" << m_cameraIndex;
+                cout << "Failed to read frame from camera" << m_cameraIndex << endl;
+                emit errorOccurred(QString("Failed to read frame from camera %1").arg(m_cameraIndex));
                 QThread::msleep(25);
                 continue;
             }
 
             try
             {
-                VideoSettings srcSettings = settingsManager.GetSettings(currentSrcId);
+                VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
                 double zoomFactor = srcSettings.GetPropertyValue("zoom");
                 double brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
@@ -194,7 +180,7 @@ void CameraWorker::start()
                 gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
 
-                cout << "**** Video Source: " << cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
+                cout << "**** Video Source: " << m_cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
                 // 3. GPU Zoom (using CUDA resize)
                 if (zoomFactor != 1.0)
                 {

@@ -15,7 +15,8 @@ class CameraWindow : public QWidget
     Q_OBJECT
 
 public:
-    explicit CameraWindow(int cameraIndex, QWidget *parent = nullptr);
+    // explicit CameraWindow(int cameraIndex, VideoSettingsManager& settingsManager, QWidget *parent = nullptr);
+    explicit CameraWindow(int cameraIndex, VideoSettingsManager& settingsManager, QWidget* parent = nullptr);
     ~CameraWindow();
 
 private slots:
@@ -35,6 +36,7 @@ private:
     double brightnessFactor;
     double zoomFactor;
     int cameraIndex;
+    VideoSettingsManager& m_settingsManager;
 };
 
 #endif // CAMERA_WINDOW_H
