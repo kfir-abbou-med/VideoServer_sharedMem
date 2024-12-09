@@ -69,7 +69,7 @@ void MainWindow::detectCameras()
         // cameraWindow->show();
         // testCapture.release();
 
-        auto cameraWorker = new CameraWorker(camIndex, *settingsManager);
+        auto cameraWorker = new CameraWorker(camIndex,  *settingsManager);
         auto workerThread = new QThread;
 
         cameraWorker->moveToThread(workerThread);
@@ -82,6 +82,8 @@ void MainWindow::detectCameras()
 
         // Start the thread
         workerThread->start();
+
+
     }
 }
 
