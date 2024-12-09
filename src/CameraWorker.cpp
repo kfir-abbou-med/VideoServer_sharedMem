@@ -56,9 +56,11 @@ void CameraWorker::handleMessage(const std::string &message)
         {
             std::cout << "UpdateSetting called successfully" << std::endl;
 
-            VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
+            VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
             zoomFactor = srcSettings.GetPropertyValue("zoom");
             brightnessFactor = srcSettings.GetPropertyValue("brightness");
+
+            cout << "brightnessFactor: " << brightnessFactor << endl;
         }
         else{
             cout << "Update failed... " << endl;
