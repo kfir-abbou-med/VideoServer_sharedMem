@@ -49,6 +49,17 @@ CameraWorker::~CameraWorker()
 void CameraWorker::handleMessage(const std::string &message)
 {
     cout << "Message received on worker..." << message << endl;
+    const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
+    cout << "sourceId: " << sourceId << ", propertyName: " << propertyName << ", propertyValue: " << propertyValue << endl;
+
+    
+    try {
+            std::cout << "calling UpdateSetting " << std::endl;
+            m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
+            std::cout << "UpdateSetting called successfully" << std::endl;
+        } catch (const std::exception& e) {
+            std::cerr << "Exception in UpdateSetting: " << e.what() << std::endl;
+        }
 }
 
 std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
@@ -60,7 +71,7 @@ std::tuple<std::string, std::string, double> deserializeMessage(const std::strin
     std::string propertyName = jsonData["propertyName"];
     double propertyValue = jsonData["propertyValue"];
 
-    cout << "deserializeMessage::sourceId: " << sourceId << endl;
+    // cout << "deserializeMessage::sourceId: " << sourceId << endl;
     // Return as a tuple
     return std::make_tuple(sourceId, propertyName, propertyValue);
 }
@@ -110,10 +121,10 @@ void CameraWorker::start()
         std::cout << "add default video settings: " << std::endl;
         auto setting = VideoSettings();
         m_settingsManager.SetSettings(sharedMemoryName, setting);
-        
+
         // Register listener with VideoSettingsManager
         m_settingsManager.RegisterListener(sharedMemoryName, [this](const std::string &message)
-                                            { handleMessage(message); });
+                                           { handleMessage(message); });
 
         // Remove existing shared memory segment
         boost::interprocess::shared_memory_object::remove(sharedMemoryName);
