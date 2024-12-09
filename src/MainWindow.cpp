@@ -8,8 +8,6 @@
 
 using namespace std;
 
-
-
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
     setWindowTitle("Camera Manager");
@@ -22,53 +20,55 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     layout->addWidget(detectButton, 0, Qt::AlignCenter);
 
     connect(detectButton, &QPushButton::clicked, this, &MainWindow::detectCameras);
-} 
+}
 
 void MainWindow::detectCameras()
 {
     auto commService = new Communication::CommService("127.0.0.1", 8080);
     auto settingsManager = new VideoSettingsManager(*commService);
-    std::vector<int> availableCameras;
-    for (int i = 0; i < 8; ++i) {
+    int availableCameras[4] = {0, 4};
+    int numCameras = 2;
+    for (int i = 0; i < numCameras; ++i)
+    {
         cv::VideoCapture testCapture;
-        cout << "trying to open cam in index: " << i << endl;
+        int camIndex = availableCameras[i];
+        cout << "trying to open cam in index: " << camIndex << endl;
 
         // Set some properties to ensure compatibility
         testCapture.set(cv::CAP_PROP_FPS, 60);
         testCapture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
         testCapture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        testCapture.open(i, cv::CAP_V4L2);
-      
-        if (!testCapture.isOpened()) {
-            cout << "Failed to open camera at index " << i << endl;
+        testCapture.open(camIndex, cv::CAP_V4L2);
+
+        if (!testCapture.isOpened())
+        {
+            cout << "Failed to open camera at index " << camIndex << endl;
             continue;
         }
 
         cv::Mat frame;
-        if (!testCapture.read(frame)) {
-            cout << "Cannot read from camera at index " << i << endl;
+        if (!testCapture.read(frame))
+        {
+            cout << "Cannot read from camera at index " << camIndex << endl;
             testCapture.release();
             continue;
         }
 
-        if (frame.empty()) {
-            cout << "Captured frame is empty at index " << i << endl;
+        if (frame.empty())
+        {
+            cout << "Captured frame is empty at index " << camIndex << endl;
             testCapture.release();
             continue;
         }
 
-        cout << "Successfully opened camera at index: " << i << endl;
+        cout << "Successfully opened camera at index: " << camIndex << endl;
         cout << "Frame size: " << frame.cols << "x" << frame.rows << endl;
-        
-        // availableCameras.push_back(i);
 
-        CameraWindow* cameraWindow = new CameraWindow(i, *settingsManager);
+        CameraWindow *cameraWindow = new CameraWindow(camIndex, *settingsManager);
         cameraWindow->show();
         testCapture.release();
     }
 }
-
-
 
 // #include "headers/MainWindow.h"
 // #include "headers/CameraWindow.h"
