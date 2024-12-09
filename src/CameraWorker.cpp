@@ -31,10 +31,6 @@ CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, VideoS
 {
 }
 
-// CameraWorker::CameraWorker(int cameraIndex, QObject* parent): QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager){
-
-// }
-
 CameraWorker::CameraWorker(int cameraIndex, VideoSettingsManager &settingsManager, QObject *parent) : QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager)
 {
 }
@@ -52,14 +48,26 @@ void CameraWorker::handleMessage(const std::string &message)
     const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
     cout << "sourceId: " << sourceId << ", propertyName: " << propertyName << ", propertyValue: " << propertyValue << endl;
 
-    
-    try {
-            std::cout << "calling UpdateSetting " << std::endl;
-            m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
+    try
+    {
+        std::cout << "calling UpdateSetting " << std::endl;
+        bool updated = m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
+        if (updated)
+        {
             std::cout << "UpdateSetting called successfully" << std::endl;
-        } catch (const std::exception& e) {
-            std::cerr << "Exception in UpdateSetting: " << e.what() << std::endl;
+
+            VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
+            zoomFactor = srcSettings.GetPropertyValue("zoom");
+            brightnessFactor = srcSettings.GetPropertyValue("brightness");
         }
+        else{
+            cout << "Update failed... " << endl;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Exception in UpdateSetting: " << e.what() << std::endl;
+    }
 }
 
 std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
@@ -118,13 +126,13 @@ void CameraWorker::start()
         // Prepare shared memory
         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
 
-        std::cout << "add default video settings: " << std::endl;
-        auto setting = VideoSettings();
-        m_settingsManager.SetSettings(sharedMemoryName, setting);
-
         // Register listener with VideoSettingsManager
         m_settingsManager.RegisterListener(sharedMemoryName, [this](const std::string &message)
                                            { handleMessage(message); });
+
+        std::cout << "add default video settings: " << std::endl;
+        auto setting = VideoSettings();
+        m_settingsManager.SetSettings(sharedMemoryName, setting);
 
         // Remove existing shared memory segment
         boost::interprocess::shared_memory_object::remove(sharedMemoryName);
@@ -146,6 +154,10 @@ void CameraWorker::start()
 
         boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
         void *sharedMemory = region.get_address();
+
+        VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
+        zoomFactor = srcSettings.GetPropertyValue("zoom");
+        brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
         isRunning = true;
         FrameRateTracker fpsTracker;
@@ -171,9 +183,6 @@ void CameraWorker::start()
 
             try
             {
-                VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
-                double zoomFactor = srcSettings.GetPropertyValue("zoom");
-                double brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
                 // GPU Processing Pipeline
                 // 1. Upload frame to GPU

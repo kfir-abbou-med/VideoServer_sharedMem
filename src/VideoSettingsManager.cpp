@@ -18,21 +18,15 @@ VideoSettingsManager::~VideoSettingsManager()
 {
     m_commService.stop();
 }
-
-// void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(int , const std::string &)> callback)
-// {
-//     std::lock_guard<std::mutex> lock(m_settingsMutex);
-//     m_listenersMap[sourceKey] = callback;
-// }
-
+ 
 void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const std::string &)> callback)
 {
     std::cout << "Register with source id: " << sourceKey << std::endl;
     std::lock_guard<std::mutex> lock(m_settingsMutex);
     m_listenersMap[sourceKey] = callback;
+    std::cout << "Register finished for id: " << sourceKey << std::endl;
 }
 
-// void VideoSettingsManager::UnregisterListener(const std::string &sourceKey)
 void VideoSettingsManager::UnregisterListener(std::string sourceKey)
 {
     std::lock_guard<std::mutex> lock(m_settingsMutex);
