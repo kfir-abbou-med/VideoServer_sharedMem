@@ -43,7 +43,7 @@ CameraWorker::~CameraWorker()
     stop();
 }
 
-void CameraWorker::handleMessage(const Message &message)
+void CameraWorker::handleMessage(const ClientMessage &message)
 {
     cout << "Message received on worker..." << endl;
     if (message.getType() == MessageType::UPDATE_SETTINGS)
@@ -134,7 +134,7 @@ void CameraWorker::start()
         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
 
         // Register listener with VideoSettingsManager
-        m_settingsManager.RegisterListener(sharedMemoryName, [this](const Message &message)
+        m_settingsManager.RegisterListener(sharedMemoryName, [this](const ClientMessage &message)
                                            { handleMessage(message); });
 
         std::cout << "add default video settings: " << std::endl;

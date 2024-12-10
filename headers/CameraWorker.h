@@ -33,7 +33,7 @@ signals:
     void fpsUpdated(double fps);
 
 private:
-    void handleMessage(const Message &message);
+    void handleMessage(const ClientMessage &message);
     VideoSettingsManager& m_settingsManager;
     std::string currentSrcId;
     int m_cameraIndex;

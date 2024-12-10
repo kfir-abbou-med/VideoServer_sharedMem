@@ -15,7 +15,7 @@ namespace Communication
     {
     public:
         // Callback type for received messages
-        using MessageReceivedCallback = std::function<void(Message&)>;
+        using MessageReceivedCallback = std::function<void(ClientMessage&)>;
 
         // Constructors
         CommService();
@@ -40,7 +40,7 @@ namespace Communication
         void setMessageReceivedCallback(MessageReceivedCallback callback);
         
         // Send message method
-        void sendMessage(const Message& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket);
+        void sendMessage(const ClientMessage& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket);
 
         // Getters
         bool isServiceRunning() const { return isRunning; }

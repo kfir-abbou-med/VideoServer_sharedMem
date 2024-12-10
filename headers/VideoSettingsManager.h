@@ -30,18 +30,18 @@ public:
     // Load all settings from a JSON file
     void LoadFromFile(const std::string& filePath);
 
-    void RegisterListener(std::string sourceKey, std::function<void(const Message&)> callback);
+    void RegisterListener(std::string sourceKey, std::function<void(const ClientMessage&)> callback);
     
     void UnregisterListener(std::string sourceKey);
 
 
 private:
     std::unordered_map<std::string, VideoSettings> m_settingsMap; // Dictionary for video settings
-    std::unordered_map<std::string, std::function<void(const Message&)>> m_listenersMap;
+    std::unordered_map<std::string, std::function<void(const ClientMessage&)>> m_listenersMap;
     // mutable std::mutex m_settingsMutex;
     mutable std::recursive_mutex m_settingsMutex;
     Communication::CommService& m_commService;
-    void onMessageReceived(Message &message);
+    void onMessageReceived(ClientMessage &message);
 };
 
 #endif // VIDEOSETTINGSMANAGER_H

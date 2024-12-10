@@ -10,7 +10,7 @@ using json = nlohmann::json;
 
 VideoSettingsManager::VideoSettingsManager(Communication::CommService &commService) : m_commService(commService)
 {
-    commService.setMessageReceivedCallback([this](Message &message)
+    commService.setMessageReceivedCallback([this](ClientMessage &message)
                                            { onMessageReceived(message); });
     commService.start();
 }
@@ -20,7 +20,7 @@ VideoSettingsManager::~VideoSettingsManager()
     m_commService.stop();
 }
 
-void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const Message &)> callback)
+void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const ClientMessage &)> callback)
 {
     std::cout << "Register with source id: " << sourceKey << std::endl;
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
@@ -34,7 +34,7 @@ void VideoSettingsManager::UnregisterListener(std::string sourceKey)
     m_listenersMap.erase(sourceKey);
 }
 
-void VideoSettingsManager::onMessageReceived(Message &message)
+void VideoSettingsManager::onMessageReceived(ClientMessage &message)
 {
     try
     {
@@ -43,6 +43,8 @@ void VideoSettingsManager::onMessageReceived(Message &message)
 
         auto msgType = message.getType();
         std::cout << "Msg type: " << int(msgType) << std::endl;
+
+        auto msgData = message.getData<UpdateSettingsData>();
         // auto jsonData = json::parse(message);
         // auto sourceId = message.at("sourceId");
         // std::string propertyName = message.at("propertyName");

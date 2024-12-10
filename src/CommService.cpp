@@ -106,7 +106,7 @@ namespace Communication
                     std::cout << "[CommService::handleClient] msg recv" << receivedJson << std::endl;
 
                     // Deserialize the message
-                    Message message = Message::deserialize(receivedJson);
+                    ClientMessage message = ClientMessage::deserialize(receivedJson);
 
                     // Call the message received callback with the deserialized message
                     if (m_messageReceivedCallback)
@@ -133,7 +133,7 @@ namespace Communication
     }
 
     // Method to send a message
-    void CommService::sendMessage(const Message& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
+    void CommService::sendMessage(const ClientMessage& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
     {
         try 
         {
