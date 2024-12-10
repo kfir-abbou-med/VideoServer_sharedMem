@@ -20,7 +20,7 @@ VideoSettingsManager::~VideoSettingsManager()
     m_commService.stop();
 }
 
-void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const Message&)> callback)
+void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const Message &)> callback)
 {
     std::cout << "Register with source id: " << sourceKey << std::endl;
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
@@ -40,10 +40,13 @@ void VideoSettingsManager::onMessageReceived(Message &message)
     {
         // std::cout << "[VideoSettingsManager::onMessageReceived] " << message << std::endl;
         // // Parse the JSON message
+
+        auto msgType = message.getType();
+        std::cout << "Msg type: " << int(msgType) << std::endl;
         // auto jsonData = json::parse(message);
-        // auto sourceId = jsonData.at("sourceId");
-        // std::string propertyName = jsonData.at("propertyName");
-        // double propertyValue = jsonData.at("propertyValue");
+        // auto sourceId = message.at("sourceId");
+        // std::string propertyName = message.at("propertyName");
+        // double propertyValue = message.at("propertyValue");
 
         // std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
         // auto it = m_listenersMap.find(sourceId);

@@ -100,11 +100,10 @@ namespace Communication
             {
                 try 
                 {
-                    std::cout << "[CommService::handleClient] msg recv" << std::endl;
-
                     // Parse the received JSON message
                     std::string jsonStr(buffer->data(), bytesTransferred);
                     json receivedJson = json::parse(jsonStr);
+                    std::cout << "[CommService::handleClient] msg recv" << receivedJson << std::endl;
 
                     // Deserialize the message
                     Message message = Message::deserialize(receivedJson);
