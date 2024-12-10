@@ -2,10 +2,12 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <thread>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace Communication
 {
-
     CommService::CommService(const std::string &ip, int port)
         : m_ip(ip), m_port(port), m_messageReceivedCallback(nullptr), isRunning(false), acceptor(ioContext) {}
 
@@ -76,7 +78,6 @@ namespace Communication
                               {
             if (!error)
             {
-                // std::cout << "New client connected: " << socket->remote_endpoint() << std::endl;
                 handleClient(socket);
             }
             else
@@ -97,22 +98,65 @@ namespace Communication
                                 {
             if (!error)
             {
-                std::string message(buffer->data(), bytesTransferred);
-                std::cout << "Message received: " << message << std::endl;
-
-                if (m_messageReceivedCallback)
+                try 
                 {
-                    m_messageReceivedCallback(message);
+                    std::cout << "[CommService::handleClient] msg recv" << std::endl;
+
+                    // Parse the received JSON message
+                    std::string jsonStr(buffer->data(), bytesTransferred);
+                    json receivedJson = json::parse(jsonStr);
+
+                    // Deserialize the message
+                    Message message = Message::deserialize(receivedJson);
+
+                    // Call the message received callback with the deserialized message
+                    if (m_messageReceivedCallback)
+                    {
+                        m_messageReceivedCallback(message);
+                    }
+
+                    // Log the received message type
+                    std::cout << "Received message of type: " 
+                              << static_cast<int>(message.getType()) << std::endl;
+                }
+                catch (const std::exception& e)
+                {
+                    std::cerr << "Error parsing message: " << e.what() << std::endl;
                 }
 
                 // Keep listening for more messages from the same client
                 handleClient(socket);
-
             }
             else if (error != boost::asio::error::operation_aborted)
             {
                 std::cerr << "Client disconnected: " << error.message() << std::endl;
             } });
+    }
+
+    // Method to send a message
+    void CommService::sendMessage(const Message& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
+    {
+        try 
+        {
+            // Serialize the message to JSON
+            json serializedMessage = message.serialize();
+            std::string jsonStr = serializedMessage.dump();
+
+            // Send the serialized message
+            boost::asio::async_write(*socket, 
+                boost::asio::buffer(jsonStr), 
+                [](const boost::system::error_code& error, std::size_t /*bytes_transferred*/) 
+                {
+                    if (error)
+                    {
+                        std::cerr << "Error sending message: " << error.message() << std::endl;
+                    }
+                });
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "Error serializing message: " << e.what() << std::endl;
+        }
     }
 
 } // namespace Communication

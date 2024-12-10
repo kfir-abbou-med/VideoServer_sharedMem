@@ -1,4 +1,5 @@
 #include "headers/VideoSettingsManager.h"
+#include "headers/Message.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iostream>
@@ -9,7 +10,7 @@ using json = nlohmann::json;
 
 VideoSettingsManager::VideoSettingsManager(Communication::CommService &commService) : m_commService(commService)
 {
-    commService.setMessageReceivedCallback([this](const std::string &message)
+    commService.setMessageReceivedCallback([this](Message &message)
                                            { onMessageReceived(message); });
     commService.start();
 }
@@ -19,7 +20,7 @@ VideoSettingsManager::~VideoSettingsManager()
     m_commService.stop();
 }
 
-void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const std::string &)> callback)
+void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const Message&)> callback)
 {
     std::cout << "Register with source id: " << sourceKey << std::endl;
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
@@ -33,32 +34,32 @@ void VideoSettingsManager::UnregisterListener(std::string sourceKey)
     m_listenersMap.erase(sourceKey);
 }
 
-void VideoSettingsManager::onMessageReceived(const std::string &message)
+void VideoSettingsManager::onMessageReceived(Message &message)
 {
     try
     {
-        std::cout << "onMessageReceived: " << message << std::endl;
-        // Parse the JSON message
-        auto jsonData = json::parse(message);
-        auto sourceId = jsonData.at("sourceId");
-        std::string propertyName = jsonData.at("propertyName");
-        double propertyValue = jsonData.at("propertyValue");
+        // std::cout << "[VideoSettingsManager::onMessageReceived] " << message << std::endl;
+        // // Parse the JSON message
+        // auto jsonData = json::parse(message);
+        // auto sourceId = jsonData.at("sourceId");
+        // std::string propertyName = jsonData.at("propertyName");
+        // double propertyValue = jsonData.at("propertyValue");
 
-        std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-        auto it = m_listenersMap.find(sourceId);
+        // std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
+        // auto it = m_listenersMap.find(sourceId);
 
-        std::cout << "check for: " << sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
-        for (auto const &x : m_listenersMap)
-        {
-            std::cout << x.first << std::endl;
-        }
+        // std::cout << "check for: " << sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
+        // for (auto const &x : m_listenersMap)
+        // {
+        //     std::cout << x.first << std::endl;
+        // }
 
-        if (it != m_listenersMap.end())
-        {
-            // Fire the listener callback
-            std::cout << "msg received in settings manager " << message << std::endl;
-            it->second(message);
-        }
+        // if (it != m_listenersMap.end())
+        // {
+        //     // Fire the listener callback
+        //     std::cout << "msg received in settings manager " << message << std::endl;
+        //     it->second(message);
+        // }
     }
     catch (const std::exception &ex)
     {

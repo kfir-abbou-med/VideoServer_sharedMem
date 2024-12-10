@@ -27,13 +27,13 @@ public slots:
     // void changeZoom(double factor);
 
 signals:
-    void onMessageReceived(const std::string &message);
+    void onMessageReceived(const json &message);
     void frameReady(const QImage &image);
     void errorOccurred(const QString &error);
     void fpsUpdated(double fps);
 
 private:
-    void handleMessage(const std::string& message);
+    void handleMessage(const Message &message);
     VideoSettingsManager& m_settingsManager;
     std::string currentSrcId;
     int m_cameraIndex;

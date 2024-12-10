@@ -1,5 +1,4 @@
-#ifndef COMMSERVICE_H
-#define COMMSERVICE_H
+#pragma once
 
 #include <boost/asio.hpp>
 #include <thread>
@@ -7,59 +6,65 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <nlohmann/json.hpp>
+#include "headers/Message.h" // Include the Message class definition
 
-namespace Communication
+namespace Communication 
 {
-
-    class CommService
+    class CommService 
     {
     public:
-        using MessageReceivedCallback = std::function<void(const std::string &)>;
+        // Callback type for received messages
+        using MessageReceivedCallback = std::function<void(Message&)>;
 
         // Constructors
-        CommService(const std::string &ip, int port);
         CommService();
-
+        CommService(const std::string& ip, int port);
+        
         // Destructor
         ~CommService();
 
-        // Set the callback to handle received messages
-        void setMessageReceivedCallback(MessageReceivedCallback callback);
+        // Prevent copying
+        CommService(const CommService&) = delete;
+        CommService& operator=(const CommService&) = delete;
 
-        // Start the server
+        // Move semantics
+        CommService(CommService&&) noexcept = default;
+        CommService& operator=(CommService&&) noexcept = default;
+
+        // Core service methods
         void start();
-
-        // Stop the server
         void stop();
 
+        // Set callback for received messages
+        void setMessageReceivedCallback(MessageReceivedCallback callback);
+        
+        // Send message method
+        void sendMessage(const Message& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket);
+
+        // Getters
+        bool isServiceRunning() const { return isRunning; }
+        std::string getIpAddress() const { return m_ip; }
+        int getPort() const { return m_port; }
+
     private:
-        // Main server loop
-        void run();
-
-        // Accept new client connections
+        // Internal methods
         void acceptConnections();
-
-        // Handle communication with a connected client
         void handleClient(std::shared_ptr<boost::asio::ip::tcp::socket> socket);
 
-        // Server settings
+        // Member variables
         std::string m_ip;
         int m_port;
 
-        // Asynchronous IO context and acceptor
+        // Boost.Asio components
         boost::asio::io_context ioContext;
         boost::asio::ip::tcp::acceptor acceptor;
 
-        // Callback for handling received messages
-        MessageReceivedCallback m_messageReceivedCallback;
-
-        // Thread for running the IO context
+        // Threading components
         std::thread workerThread;
-
-        // Atomic flag to indicate if the server is running
         std::atomic<bool> isRunning;
+
+        // Callback for message handling
+        MessageReceivedCallback m_messageReceivedCallback;
     };
-
-} // namespace Communication
-
-#endif // COMMSERVICE_H
+}

@@ -5,7 +5,7 @@ TARGET = CameraManager
 # TEMPLATE = app
 
 # Add C++ version
-CONFIG += c++11 \
+CONFIG += c++17 \
           thread
 
 
@@ -75,7 +75,9 @@ HEADERS += \
     headers/CommService.h \
     headers/MessageUtils.h \
     headers/VideoSettingsManager.h \
-    headers/VideoSettings.h
+    headers/VideoSettings.h \
+    headers/Message.h 
+
 
 
 # Link against Qt modules

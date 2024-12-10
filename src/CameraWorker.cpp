@@ -2,6 +2,7 @@
 #include "headers/FrameRateTracker.h"
 #include "headers/CommService.h"
 #include "headers/MessageUtils.h"
+#include "headers/Message.h"
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudawarping.hpp>
@@ -42,29 +43,33 @@ CameraWorker::~CameraWorker()
     stop();
 }
 
-void CameraWorker::handleMessage(const std::string &message)
+void CameraWorker::handleMessage(const Message &message)
 {
-    cout << "Message received on worker..." << message << endl;
-    const auto &[sourceId, propertyName, propertyValue] = deserializeMessage(message);
-    cout << "sourceId: " << sourceId << ", propertyName: " << propertyName << ", propertyValue: " << propertyValue << endl;
+    cout << "Message received on worker..." << endl;
+    if (message.getType() == MessageType::UPDATE_SETTINGS)
+    {
+        UpdateSettingsData updateData = message.getData<UpdateSettingsData>();
+        std::cout << "Property Name: " << updateData.propertyName << " Value: " << updateData.propertyValue << std::endl;
+    }
 
     try
     {
         std::cout << "calling UpdateSetting " << std::endl;
-        bool updated = m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
-        if (updated)
-        {
-            std::cout << "UpdateSetting called successfully" << std::endl;
+        // bool updated = m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
+        // if (updated)
+        // {
+        //     std::cout << "UpdateSetting called successfully" << std::endl;
 
-            VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
-            zoomFactor = srcSettings.GetPropertyValue("zoom");
-            brightnessFactor = srcSettings.GetPropertyValue("brightness");
+        //     VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
+        //     zoomFactor = srcSettings.GetPropertyValue("zoom");
+        //     brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
-            cout << "brightnessFactor: " << brightnessFactor << endl;
-        }
-        else{
-            cout << "Update failed... " << endl;
-        }
+        //     cout << "brightnessFactor: " << brightnessFactor << endl;
+        // }
+        // else
+        // {
+        //     cout << "Update failed... " << endl;
+        // }
     }
     catch (const std::exception &e)
     {
@@ -72,19 +77,19 @@ void CameraWorker::handleMessage(const std::string &message)
     }
 }
 
-std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
-{
-    // Parse the JSON message
-    auto jsonData = nlohmann::json::parse(message);
+// std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
+// {
+//     // Parse the JSON message
+//     auto jsonData = nlohmann::json::parse(message);
 
-    std::string sourceId = jsonData["sourceId"];
-    std::string propertyName = jsonData["propertyName"];
-    double propertyValue = jsonData["propertyValue"];
+//     std::string sourceId = jsonData["sourceId"];
+//     std::string propertyName = jsonData["propertyName"];
+//     double propertyValue = jsonData["propertyValue"];
 
-    // cout << "deserializeMessage::sourceId: " << sourceId << endl;
-    // Return as a tuple
-    return std::make_tuple(sourceId, propertyName, propertyValue);
-}
+//     // cout << "deserializeMessage::sourceId: " << sourceId << endl;
+//     // Return as a tuple
+//     return std::make_tuple(sourceId, propertyName, propertyValue);
+// }
 
 void CameraWorker::start()
 {
@@ -129,7 +134,7 @@ void CameraWorker::start()
         snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
 
         // Register listener with VideoSettingsManager
-        m_settingsManager.RegisterListener(sharedMemoryName, [this](const std::string &message)
+        m_settingsManager.RegisterListener(sharedMemoryName, [this](const Message &message)
                                            { handleMessage(message); });
 
         std::cout << "add default video settings: " << std::endl;
@@ -227,7 +232,7 @@ void CameraWorker::start()
                 // 6. Prepare FPS text
                 std::stringstream fpsText;
                 fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
-                cout << fpsText.str() << " -> " << sharedMemoryName << endl;
+                // cout << fpsText.str() << " -> " << sharedMemoryName << endl;
 
                 // 7. Write to shared memory
                 size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
