@@ -28,8 +28,6 @@ namespace Communication
                   << std::endl;
 
         m_messageReceivedCallbacks[source][type] = callback;
-
-        // m_messageReceivedCallback[type] = callback;
     }
 
     void CommService::start()
@@ -134,15 +132,6 @@ namespace Communication
                             return;
                         }
                     }
-
-                    // Find the callback for this specific message type
-                    // auto it = m_messageReceivedCallback.find(message.getType());
-                    
-                    // // If a callback is registered for this type, invoke it
-                    // if (it != m_messageReceivedCallback.end()) {
-                    //     it->second(message);
-                    //     std::cout << "[CommService::handleClient] fired event: " << std::endl;
-                    // }
                     else{
                         std::cout << "Didn't find type: " << int(message.getType()) << std::endl;
                     }

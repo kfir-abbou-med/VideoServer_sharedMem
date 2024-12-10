@@ -60,7 +60,6 @@ SOURCES += \
     src/main.cpp \
     src/Mainwindow.cpp \
     src/CameraWorker.cpp \ 
-    src/CameraWindow.cpp \
     src/FrameRateTracker.cpp \
     src/CommService.cpp \
     src/VideoSettingsManager.cpp \
@@ -70,7 +69,6 @@ SOURCES += \
 HEADERS += \
     headers/MainWindow.h \
     headers/CameraWorker.h \
-    headers/CameraWindow.h \
     headers/FrameRateTracker.h \
     headers/CommService.h \
     headers/MessageUtils.h \

@@ -23,35 +23,6 @@ using json = nlohmann::json;
 using namespace std;
 using namespace boost::interprocess;
 
-CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, Communication::CommService &commService, VideoSettingsManager &settingsManagerRef, QObject *parent)
-    : QObject(parent),
-      m_cameraIndex(cameraIndex),
-      sourceKey(sourceKey),
-      isRunning(false),
-      brightnessFactor(1.0),
-      zoomFactor(1.0),
-      m_commService(commService),
-      m_settingsManager(settingsManagerRef),
-      m_sharedMemoryName("")
-{
-
-    // cout << "index: " << std::to_string(cameraIndex) << endl;
-    // Prepare shared memory
-    snprintf(m_sharedMemoryName, sizeof(m_sharedMemoryName), "SharedFrame%d", cameraIndex);
-
-    // cout << m_sharedMemoryName << endl;
-    // Register listener with VideoSettingsManager
-    // m_settingsManager.RegisterListener(m_sharedMemoryName, [this](const ClientMessage &message)
-    //                                    { settingsMgrMessageReceived(message); });
-
-    commService.setMessageReceivedCallback(MessageType::COMMAND, m_sharedMemoryName,
-                                           [this](ClientMessage &message)
-                                           {
-                                               cout << "Got command" << endl;
-                                               onMessageReceived(message);
-                                           });
-}
-
 CameraWorker::CameraWorker(int cameraIndex, Communication::CommService &commService, VideoSettingsManager &settingsManager, QObject *parent) : QObject(parent),
                                                                                                                                                m_cameraIndex(cameraIndex),
                                                                                                                                                m_commService(commService),
@@ -65,20 +36,18 @@ CameraWorker::CameraWorker(int cameraIndex, Communication::CommService &commServ
     commService.setMessageReceivedCallback(MessageType::COMMAND, m_sharedMemoryName,
                                            [this](ClientMessage &message)
                                            {
-                                               onMessageReceived(message);
+                                               commandMessageReceived(message);
                                            });
 
     commService.setMessageReceivedCallback(MessageType::UPDATE_SETTINGS, m_sharedMemoryName,
                                            [this](ClientMessage &message)
                                            {
-                                               onMessageReceived1(message);
+                                               updateSettingMessageReceived(message);
                                            });
 }
 
 CameraWorker::~CameraWorker()
 {
-    // Unregister listener from VideoSettingsManager
-    // m_settingsManager.UnregisterListener(sourceKey);
     stop();
 }
 
@@ -87,16 +56,14 @@ void CameraWorker::settingsMgrMessageReceived(const ClientMessage &message)
     cout << "Message received on worker..." << endl;
     try
     {
-        // if (message.getType() == MessageType::UPDATE_SETTINGS)
-        // {
         auto msgData = message.getData<UpdateSettingsData>();
         auto sourceId = message.getSource();
+
         // can refresh by property or all
         VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
 
         zoomFactor = srcSettings.GetPropertyValue("zoom");
         brightnessFactor = srcSettings.GetPropertyValue("brightness");
-        // }
     }
     catch (const std::exception &e)
     {
@@ -104,7 +71,7 @@ void CameraWorker::settingsMgrMessageReceived(const ClientMessage &message)
     }
 }
 
-void CameraWorker::onMessageReceived(ClientMessage &message)
+void CameraWorker::commandMessageReceived(ClientMessage &message)
 {
     auto msgType = message.getType();
     std::cout << "[CameraWorker::onMessageReceived] Msg type: " << int(msgType) << std::endl;
@@ -127,7 +94,7 @@ void CameraWorker::onMessageReceived(ClientMessage &message)
     }
 }
 
-void CameraWorker::onMessageReceived1(ClientMessage &message)
+void CameraWorker::updateSettingMessageReceived(ClientMessage &message)
 {
     cout << "[CameraWorker::onMessageReceived1]" << endl;
     auto msgData = message.getData<UpdateSettingsData>();
@@ -207,7 +174,7 @@ void CameraWorker::start()
                               boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
                               void *sharedMemory = region.get_address();
 
-                              VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
+                              VideoSettings srcSettings = m_settingsManager.GetSettings(m_sharedMemoryName);
                               zoomFactor = srcSettings.GetPropertyValue("zoom");
                               brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
