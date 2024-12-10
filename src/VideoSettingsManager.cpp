@@ -44,7 +44,24 @@ void VideoSettingsManager::onMessageReceived(ClientMessage &message)
         auto msgType = message.getType();
         std::cout << "Msg type: " << int(msgType) << std::endl;
 
-        auto msgData = message.getData<UpdateSettingsData>();
+        if (msgType == MessageType::UPDATE_SETTINGS)
+        { // update settings
+            auto msgData = message.getData<UpdateSettingsData>();
+
+            std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
+            auto it = m_listenersMap.find(msgData.sourceId);
+
+            std::cout << "check for: " << msgData.sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
+
+            UpdateSetting(msgData.sourceId, msgData.propertyName, stod(msgData.propertyValue));
+            if (it != m_listenersMap.end())
+            {
+                // Fire the listener callback
+                // std::cout << "msg received in settings manager " << message << std::endl;
+                it->second(message);
+            }
+        }
+
         // auto jsonData = json::parse(message);
         // auto sourceId = message.at("sourceId");
         // std::string propertyName = message.at("propertyName");

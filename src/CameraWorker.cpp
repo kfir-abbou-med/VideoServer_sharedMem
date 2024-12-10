@@ -46,10 +46,16 @@ CameraWorker::~CameraWorker()
 void CameraWorker::handleMessage(const ClientMessage &message)
 {
     cout << "Message received on worker..." << endl;
+
     if (message.getType() == MessageType::UPDATE_SETTINGS)
     {
-        UpdateSettingsData updateData = message.getData<UpdateSettingsData>();
-        std::cout << "Property Name: " << updateData.propertyName << " Value: " << updateData.propertyValue << std::endl;
+        auto msgData = message.getData<UpdateSettingsData>();
+
+        // can refresh by property or all
+        VideoSettings srcSettings = m_settingsManager.GetSettings(msgData.sourceId);
+
+        zoomFactor = srcSettings.GetPropertyValue("zoom");
+        brightnessFactor = srcSettings.GetPropertyValue("brightness");
     }
 
     try
