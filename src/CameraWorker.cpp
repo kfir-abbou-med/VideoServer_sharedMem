@@ -58,15 +58,10 @@ CameraWorker::CameraWorker(int cameraIndex, Communication::CommService &commServ
                                                                                                                                                m_settingsManager(settingsManager),
                                                                                                                                                m_sharedMemoryName("")
 {
-    cout << "index: " << std::to_string(cameraIndex) << endl;
     // Prepare shared memory
     snprintf(m_sharedMemoryName, sizeof(m_sharedMemoryName), "SharedFrame%d", cameraIndex);
 
-    cout << m_sharedMemoryName << endl;
-    // Register listener with VideoSettingsManager
-    // m_settingsManager.RegisterListener(m_sharedMemoryName, [this](const ClientMessage &message)
-    //                                    { settingsMgrMessageReceived(message); });
-
+    boost::interprocess::shared_memory_object::remove(m_sharedMemoryName);
     commService.setMessageReceivedCallback(MessageType::COMMAND, m_sharedMemoryName,
                                            [this](ClientMessage &message)
                                            {
@@ -318,8 +313,7 @@ void CameraWorker::start()
                           // Cleanup
                           capture.release();
                           boost::interprocess::shared_memory_object::remove(m_sharedMemoryName);
-                          isRunning = false;
-                      });
+                          isRunning = false; });
 }
 
 void CameraWorker::stop()
