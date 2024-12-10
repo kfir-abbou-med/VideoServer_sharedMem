@@ -29,7 +29,9 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 void MainWindow::detectCameras()
 {
     auto commService = new Communication::CommService("127.0.0.1", 8080);
-    auto settingsManager = new VideoSettingsManager(*commService);
+    commService->start();
+    // auto settingsManager = new VideoSettingsManager(*commService);
+    auto settingsManager = new VideoSettingsManager();
     int availableCameras[4] = {0, 4};
     int numCameras = 2;
 
@@ -44,14 +46,14 @@ void MainWindow::detectCameras()
         testCapture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
         testCapture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
       
-        auto cameraWorker = new CameraWorker(camIndex,  *settingsManager);
-        cameraWorker->stop();
+        auto cameraWorker = new CameraWorker(camIndex, *commService, *settingsManager);
+        // cameraWorker->stop();
         auto workerThread = new QThread;
 
         cameraWorker->moveToThread(workerThread);
 
         // Start the worker when the thread starts
-        connect(workerThread, &QThread::started, cameraWorker, &CameraWorker::start);
+        connect(workerThread, &QThread::started, cameraWorker, &CameraWorker::stop);
 
         // Cleanup the worker and thread when the thread finishes
         connect(workerThread, &QThread::finished, cameraWorker, &CameraWorker::deleteLater);
@@ -59,7 +61,5 @@ void MainWindow::detectCameras()
 
         // Start the thread
         workerThread->start();
-
-
     }
 }

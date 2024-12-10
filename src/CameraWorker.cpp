@@ -16,48 +16,92 @@
 #include <tuple>
 #include <QObject>
 #include <QThread>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
 
 using json = nlohmann::json;
 using namespace std;
 using namespace boost::interprocess;
 
-CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, VideoSettingsManager &settingsManagerRef, QObject *parent)
+CameraWorker::CameraWorker(int cameraIndex, const std::string &sourceKey, Communication::CommService &commService, VideoSettingsManager &settingsManagerRef, QObject *parent)
     : QObject(parent),
       m_cameraIndex(cameraIndex),
       sourceKey(sourceKey),
       isRunning(false),
       brightnessFactor(1.0),
       zoomFactor(1.0),
-      m_settingsManager(settingsManagerRef)
+      m_commService(commService),
+      m_settingsManager(settingsManagerRef),
+      m_sharedMemoryName("")
 {
+
+    // cout << "index: " << std::to_string(cameraIndex) << endl;
+    // Prepare shared memory
+    snprintf(m_sharedMemoryName, sizeof(m_sharedMemoryName), "SharedFrame%d", cameraIndex);
+
+    // cout << m_sharedMemoryName << endl;
+    // Register listener with VideoSettingsManager
+    // m_settingsManager.RegisterListener(m_sharedMemoryName, [this](const ClientMessage &message)
+    //                                    { settingsMgrMessageReceived(message); });
+
+    commService.setMessageReceivedCallback(MessageType::COMMAND, m_sharedMemoryName,
+                                           [this](ClientMessage &message)
+                                           {
+                                               cout << "Got command" << endl;
+                                               onMessageReceived(message);
+                                           });
 }
 
-CameraWorker::CameraWorker(int cameraIndex, VideoSettingsManager &settingsManager, QObject *parent) : QObject(parent), m_cameraIndex(cameraIndex), m_settingsManager(settingsManager)
+CameraWorker::CameraWorker(int cameraIndex, Communication::CommService &commService, VideoSettingsManager &settingsManager, QObject *parent) : QObject(parent),
+                                                                                                                                               m_cameraIndex(cameraIndex),
+                                                                                                                                               m_commService(commService),
+                                                                                                                                               m_settingsManager(settingsManager),
+                                                                                                                                               m_sharedMemoryName("")
 {
+    cout << "index: " << std::to_string(cameraIndex) << endl;
+    // Prepare shared memory
+    snprintf(m_sharedMemoryName, sizeof(m_sharedMemoryName), "SharedFrame%d", cameraIndex);
+
+    cout << m_sharedMemoryName << endl;
+    // Register listener with VideoSettingsManager
+    // m_settingsManager.RegisterListener(m_sharedMemoryName, [this](const ClientMessage &message)
+    //                                    { settingsMgrMessageReceived(message); });
+
+    commService.setMessageReceivedCallback(MessageType::COMMAND, m_sharedMemoryName,
+                                           [this](ClientMessage &message)
+                                           {
+                                               onMessageReceived(message);
+                                           });
+
+    commService.setMessageReceivedCallback(MessageType::UPDATE_SETTINGS, m_sharedMemoryName,
+                                           [this](ClientMessage &message)
+                                           {
+                                               onMessageReceived1(message);
+                                           });
 }
 
 CameraWorker::~CameraWorker()
 {
     // Unregister listener from VideoSettingsManager
-    m_settingsManager.UnregisterListener(sourceKey);
+    // m_settingsManager.UnregisterListener(sourceKey);
     stop();
 }
 
-void CameraWorker::handleMessage(const ClientMessage &message)
+void CameraWorker::settingsMgrMessageReceived(const ClientMessage &message)
 {
     cout << "Message received on worker..." << endl;
     try
     {
-        if (message.getType() == MessageType::UPDATE_SETTINGS)
-        {
-            auto msgData = message.getData<UpdateSettingsData>();
+        // if (message.getType() == MessageType::UPDATE_SETTINGS)
+        // {
+        auto msgData = message.getData<UpdateSettingsData>();
+        auto sourceId = message.getSource();
+        // can refresh by property or all
+        VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
 
-            // can refresh by property or all
-            VideoSettings srcSettings = m_settingsManager.GetSettings(msgData.sourceId);
-
-            zoomFactor = srcSettings.GetPropertyValue("zoom");
-            brightnessFactor = srcSettings.GetPropertyValue("brightness");
-        }
+        zoomFactor = srcSettings.GetPropertyValue("zoom");
+        brightnessFactor = srcSettings.GetPropertyValue("brightness");
+        // }
     }
     catch (const std::exception &e)
     {
@@ -65,188 +109,221 @@ void CameraWorker::handleMessage(const ClientMessage &message)
     }
 }
 
+void CameraWorker::onMessageReceived(ClientMessage &message)
+{
+    auto msgType = message.getType();
+    std::cout << "[CameraWorker::onMessageReceived] Msg type: " << int(msgType) << std::endl;
+
+    auto msgData = message.getData<CommandData>();
+    auto sourceId = message.getSource();
+
+    cout << "source: " << sourceId << ", command: " << msgData.command << ", m_sharedMemoryName: " << m_sharedMemoryName << endl;
+    if (sourceId == m_sharedMemoryName)
+    {
+        cout << "same source" << endl;
+        if (msgData.command == "start")
+        {
+            start();
+        }
+        else if (msgData.command == "stop")
+        {
+            stop();
+        }
+    }
+}
+
+void CameraWorker::onMessageReceived1(ClientMessage &message)
+{
+    cout << "[CameraWorker::onMessageReceived1]" << endl;
+    auto msgData = message.getData<UpdateSettingsData>();
+    auto sourceId = message.getSource();
+    // can refresh by property or all
+
+    m_settingsManager.UpdateSetting(sourceId, msgData.propertyName, stod(msgData.propertyValue));
+    auto srcSettings = m_settingsManager.GetSettings(sourceId);
+
+    zoomFactor = srcSettings.GetPropertyValue("zoom");
+    brightnessFactor = srcSettings.GetPropertyValue("brightness");
+}
+
 void CameraWorker::start()
 {
-    cout << "CameraWorker::start" << endl;
+    cout << "[CameraWorker::start] is running: " << isRunning << endl;
 
     if (isRunning)
     {
         cout << "IsRunnning is true" << endl;
         return;
     }
-    char sharedMemoryName[32];
+    QtConcurrent::run([this]()
+                      {
+                          try
+                          {
+                              cout << "trying to open cam index: " << m_cameraIndex << endl;
 
-    try
-    {
-        cout << "trying to open cam index: " << m_cameraIndex << endl;
+                              // TBD: extract functions and classes
 
-        // TBD: extract functions and classes
+                              // Open camera
+                              capture.open(m_cameraIndex, cv::CAP_V4L2);
+                              capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+                              capture.set(cv::CAP_PROP_BUFFERSIZE, 3);
 
-        // Open camera
-        capture.open(m_cameraIndex, cv::CAP_V4L2);
-        capture.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
-        capture.set(cv::CAP_PROP_BUFFERSIZE, 3);
+                              // Set specific camera properties
+                              capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+                              capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+                              capture.set(cv::CAP_PROP_FPS, 60);
 
-        // Set specific camera properties
-        capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        capture.set(cv::CAP_PROP_FPS, 60);
+                              if (!capture.isOpened())
+                              {
+                                  emit errorOccurred(QString("Failed to open camera %1").arg(m_cameraIndex));
+                                  return;
+                              }
 
-        if (!capture.isOpened())
-        {
-            emit errorOccurred(QString("Failed to open camera %1").arg(m_cameraIndex));
-            return;
-        }
+                              // Check CUDA availability
+                              if (cv::cuda::getCudaEnabledDeviceCount() == 0)
+                              {
+                                  qDebug() << "CUDA is not available!";
+                                  emit errorOccurred("CUDA is not available");
+                                  return;
+                              }
 
-        // Check CUDA availability
-        if (cv::cuda::getCudaEnabledDeviceCount() == 0)
-        {
-            qDebug() << "CUDA is not available!";
-            emit errorOccurred("CUDA is not available");
-            return;
-        }
+                              std::cout << "add default video settings: " << std::endl;
+                              auto setting = VideoSettings();
+                              m_settingsManager.SetSettings(m_sharedMemoryName, setting);
 
-        // Prepare shared memory
-        snprintf(sharedMemoryName, sizeof(sharedMemoryName), "SharedFrame%d", m_cameraIndex);
+                              // Remove existing shared memory segment
+                              boost::interprocess::shared_memory_object::remove(m_sharedMemoryName);
 
-        // Register listener with VideoSettingsManager
-        m_settingsManager.RegisterListener(sharedMemoryName, [this](const ClientMessage &message)
-                                           { handleMessage(message); });
+                              // Calculate exact frame size
+                              const int width = 640;
+                              const int height = 480;
+                              const size_t channelSize = width * height;
+                              const size_t totalSize = channelSize * 3; // RGB channels
 
-        std::cout << "add default video settings: " << std::endl;
-        auto setting = VideoSettings();
-        m_settingsManager.SetSettings(sharedMemoryName, setting);
+                              // Create shared memory with precise size
+                              boost::interprocess::shared_memory_object shm(
+                                  boost::interprocess::open_or_create,
+                                  m_sharedMemoryName,
+                                  boost::interprocess::read_write);
 
-        // Remove existing shared memory segment
-        boost::interprocess::shared_memory_object::remove(sharedMemoryName);
+                              // Truncate to exact frame size
+                              shm.truncate(totalSize);
 
-        // Calculate exact frame size
-        const int width = 640;
-        const int height = 480;
-        const size_t channelSize = width * height;
-        const size_t totalSize = channelSize * 3; // RGB channels
+                              boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
+                              void *sharedMemory = region.get_address();
 
-        // Create shared memory with precise size
-        boost::interprocess::shared_memory_object shm(
-            boost::interprocess::open_or_create,
-            sharedMemoryName,
-            boost::interprocess::read_write);
+                              VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
+                              zoomFactor = srcSettings.GetPropertyValue("zoom");
+                              brightnessFactor = srcSettings.GetPropertyValue("brightness");
 
-        // Truncate to exact frame size
-        shm.truncate(totalSize);
+                              isRunning = true;
+                              FrameRateTracker fpsTracker;
 
-        boost::interprocess::mapped_region region(shm, boost::interprocess::read_write);
-        void *sharedMemory = region.get_address();
+                              // Create a CUDA stream for operations
+                              cv::cuda::Stream stream;
 
-        VideoSettings srcSettings = m_settingsManager.GetSettings(currentSrcId);
-        zoomFactor = srcSettings.GetPropertyValue("zoom");
-        brightnessFactor = srcSettings.GetPropertyValue("brightness");
+                              // Prepare CUDA-related variables outside the loop
+                              cv::cuda::GpuMat gpuFrame, processedGpuFrame;
+                              cv::Mat processedCpuFrame;
 
-        isRunning = true;
-        FrameRateTracker fpsTracker;
+                              while (isRunning)
+                              {
+                                  cv::Mat frame;
+                                  if (!capture.read(frame) || frame.empty())
+                                  {
+                                      qDebug() << "Failed to read frame from camera" << m_cameraIndex;
+                                      cout << "Failed to read frame from camera" << m_cameraIndex << endl;
+                                      emit errorOccurred(QString("Failed to read frame from camera %1").arg(m_cameraIndex));
+                                      QThread::msleep(25);
+                                      continue;
+                                  }
 
-        // Create a CUDA stream for operations
-        cv::cuda::Stream stream;
+                                  try
+                                  {
 
-        // Prepare CUDA-related variables outside the loop
-        cv::cuda::GpuMat gpuFrame, processedGpuFrame;
-        cv::Mat processedCpuFrame;
+                                      // GPU Processing Pipeline
+                                      // 1. Upload frame to GPU
+                                      gpuFrame.upload(frame, stream);
+                                      // cout << "brightness: " << brightnessFactor << endl;
+                                      // 2. GPU Brightness Adjustment
+                                      gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
 
-        while (isRunning)
-        {
-            cv::Mat frame;
-            if (!capture.read(frame) || frame.empty())
-            {
-                qDebug() << "Failed to read frame from camera" << m_cameraIndex;
-                cout << "Failed to read frame from camera" << m_cameraIndex << endl;
-                emit errorOccurred(QString("Failed to read frame from camera %1").arg(m_cameraIndex));
-                QThread::msleep(25);
-                continue;
-            }
+                                      // cout << "**** Video Source: " << m_cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
+                                      // 3. GPU Zoom (using CUDA resize)
+                                      if (zoomFactor != 1.0)
+                                      {
+                                          int zoomWidth = frame.cols / zoomFactor;
+                                          int zoomHeight = frame.rows / zoomFactor;
 
-            try
-            {
+                                          // Calculate zoom rectangle
+                                          int centerX = frame.cols / 2;
+                                          int centerY = frame.rows / 2;
+                                          cv::Rect zoomRect(
+                                              centerX - zoomWidth / 2,
+                                              centerY - zoomHeight / 2,
+                                              zoomWidth,
+                                              zoomHeight);
 
-                // GPU Processing Pipeline
-                // 1. Upload frame to GPU
-                gpuFrame.upload(frame, stream);
-                // cout << "brightness: " << brightnessFactor << endl;
-                // 2. GPU Brightness Adjustment
-                gpuFrame.convertTo(processedGpuFrame, -1, brightnessFactor, 0, stream);
+                                          // Crop on GPU
+                                          cv::cuda::GpuMat gpuZoomedFrame;
+                                          cv::cuda::resize(processedGpuFrame(zoomRect), gpuZoomedFrame, frame.size(), 0, 0, cv::INTER_LINEAR, stream);
+                                          processedGpuFrame = gpuZoomedFrame;
+                                      }
 
-                // cout << "**** Video Source: " << m_cameraIndex << " ******* brightness: " << brightnessFactor << " ******* zoom: " << zoomFactor << endl;
-                // 3. GPU Zoom (using CUDA resize)
-                if (zoomFactor != 1.0)
-                {
-                    int zoomWidth = frame.cols / zoomFactor;
-                    int zoomHeight = frame.rows / zoomFactor;
+                                      // 4. Download processed frame back to CPU
+                                      processedGpuFrame.download(processedCpuFrame, stream);
 
-                    // Calculate zoom rectangle
-                    int centerX = frame.cols / 2;
-                    int centerY = frame.rows / 2;
-                    cv::Rect zoomRect(
-                        centerX - zoomWidth / 2,
-                        centerY - zoomHeight / 2,
-                        zoomWidth,
-                        zoomHeight);
+                                      // Synchronize the stream
+                                      stream.waitForCompletion();
 
-                    // Crop on GPU
-                    cv::cuda::GpuMat gpuZoomedFrame;
-                    cv::cuda::resize(processedGpuFrame(zoomRect), gpuZoomedFrame, frame.size(), 0, 0, cv::INTER_LINEAR, stream);
-                    processedGpuFrame = gpuZoomedFrame;
-                }
+                                      // 5. Update FPS
+                                      fpsTracker.update();
 
-                // 4. Download processed frame back to CPU
-                processedGpuFrame.download(processedCpuFrame, stream);
+                                      // 6. Prepare FPS text
+                                      std::stringstream fpsText;
+                                      fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
+                                      // cout << fpsText.str() << " -> " << sharedMemoryName << endl;
 
-                // Synchronize the stream
-                stream.waitForCompletion();
+                                      // 7. Write to shared memory
+                                      size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
+                                      if (frameSize <= region.get_size())
+                                      {
+                                          std::memcpy(sharedMemory, processedCpuFrame.data, frameSize);
+                                      }
+                                      else
+                                      {
+                                          qDebug() << "Frame size exceeds shared memory size!";
+                                      }
+                                      QThread::msleep(10);
+                                  }
+                                  catch (const cv::Exception &e)
+                                  {
+                                      qDebug() << "OpenCV CUDA Error:" << e.what();
+                                      emit errorOccurred(QString("OpenCV CUDA Error: %1").arg(e.what()));
+                                      break;
+                                  }
+                              }
+                          }
+                          catch (const runtime_error &e)
+                          {
+                              // Handle divide by zero exception
+                              cout << "Exception: " << e.what() << endl;
+                          }
+                          catch (const std::exception &ex)
+                          {
+                              qDebug() << "Unexpected error:" << ex.what();
+                              emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
+                          }
 
-                // 5. Update FPS
-                fpsTracker.update();
-
-                // 6. Prepare FPS text
-                std::stringstream fpsText;
-                fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
-                // cout << fpsText.str() << " -> " << sharedMemoryName << endl;
-
-                // 7. Write to shared memory
-                size_t frameSize = processedCpuFrame.total() * processedCpuFrame.elemSize();
-                if (frameSize <= region.get_size())
-                {
-                    std::memcpy(sharedMemory, processedCpuFrame.data, frameSize);
-                }
-                else
-                {
-                    qDebug() << "Frame size exceeds shared memory size!";
-                }
-                QThread::msleep(10);
-            }
-            catch (const cv::Exception &e)
-            {
-                qDebug() << "OpenCV CUDA Error:" << e.what();
-                emit errorOccurred(QString("OpenCV CUDA Error: %1").arg(e.what()));
-                break;
-            }
-        }
-    }
-    catch (const std::exception &ex)
-    {
-        qDebug() << "Unexpected error:" << ex.what();
-        emit errorOccurred(QString("Unexpected error: %1").arg(ex.what()));
-    }
-    catch (const runtime_error &e)
-    {
-        // Handle divide by zero exception
-        cout << "Exception: " << e.what() << endl;
-    }
-    // Cleanup
-    capture.release();
-    boost::interprocess::shared_memory_object::remove(sharedMemoryName);
-    isRunning = false;
+                          // Cleanup
+                          capture.release();
+                          boost::interprocess::shared_memory_object::remove(m_sharedMemoryName);
+                          isRunning = false;
+                      });
 }
 
 void CameraWorker::stop()
 {
+    cout << "[CameraWorker::stop]" << endl;
     isRunning = false;
 }

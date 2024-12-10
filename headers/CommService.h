@@ -37,7 +37,7 @@ namespace Communication
         void stop();
 
         // Set callback for received messages
-        void setMessageReceivedCallback(MessageReceivedCallback callback);
+       void setMessageReceivedCallback( MessageType type, const std::string& sourceId, MessageReceivedCallback callback) ;
         
         // Send message method
         void sendMessage(const ClientMessage& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket);
@@ -65,6 +65,11 @@ namespace Communication
         std::atomic<bool> isRunning;
 
         // Callback for message handling
-        MessageReceivedCallback m_messageReceivedCallback;
+        // MessageReceivedCallback m_messageReceivedCallback;
+          // Message type to callback mapping
+        // std::unordered_map<MessageType, MessageReceivedCallback> m_messageReceivedCallback;
+         // Outer map: source ID -> (inner map of message type -> callback)
+    std::unordered_map<std::string, 
+        std::unordered_map<MessageType, MessageReceivedCallback>> m_messageReceivedCallbacks;
     };
 }

@@ -1,4 +1,5 @@
 #include "headers/CommService.h"
+#include "headers/Message.h"
 #include <boost/asio.hpp>
 #include <iostream>
 #include <thread>
@@ -9,19 +10,26 @@ using json = nlohmann::json;
 namespace Communication
 {
     CommService::CommService(const std::string &ip, int port)
-        : m_ip(ip), m_port(port), m_messageReceivedCallback(nullptr), isRunning(false), acceptor(ioContext) {}
+        : m_ip(ip), m_port(port), m_messageReceivedCallbacks(), isRunning(false), acceptor(ioContext) {}
 
     CommService::CommService()
-        : m_ip(""), m_port(0), m_messageReceivedCallback(nullptr), isRunning(false), acceptor(ioContext) {}
+        : m_ip(""), m_port(0), m_messageReceivedCallbacks(), isRunning(false), acceptor(ioContext) {}
 
     CommService::~CommService()
     {
         stop();
     }
 
-    void CommService::setMessageReceivedCallback(MessageReceivedCallback callback)
+    void CommService::setMessageReceivedCallback(MessageType type, const std::string &source, MessageReceivedCallback callback)
     {
-        m_messageReceivedCallback = callback;
+        std::cout << "[CommService::setMessageReceivedCallback] "
+                  << "source: " << source
+                  << ", type: " << static_cast<int>(type)
+                  << std::endl;
+
+        m_messageReceivedCallbacks[source][type] = callback;
+
+        // m_messageReceivedCallback[type] = callback;
     }
 
     void CommService::start()
@@ -94,8 +102,8 @@ namespace Communication
     void CommService::handleClient(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
     {
         auto buffer = std::make_shared<std::vector<char>>(1024);
-        socket->async_read_some(boost::asio::buffer(*buffer), [this, socket, buffer](const boost::system::error_code &error, std::size_t bytesTransferred)
-                                {
+        socket->async_read_some(boost::asio::buffer(*buffer), [this, socket, buffer](const boost::system::error_code &error, std::size_t bytesTransferred){
+            std::cout << "[CommService::handleClient] " << std::endl; 
             if (!error)
             {
                 try 
@@ -107,19 +115,45 @@ namespace Communication
 
                     // Deserialize the message
                     ClientMessage message = ClientMessage::deserialize(receivedJson);
+                    
+                    // Get source and type from the message
+                    std::string source = message.getSource();
+                    MessageType type = message.getType();
 
-                    // Call the message received callback with the deserialized message
-                    if (m_messageReceivedCallback)
-                    {
-                        m_messageReceivedCallback(message);
+                    std::cout << "Src: " << source << " type: " << int(type) << std::endl;
+                     
+                    auto sourceIt = m_messageReceivedCallbacks.find(source);
+                    if (sourceIt != m_messageReceivedCallbacks.end()) {
+                        // Find callback for this message type
+                        auto& typeCallbackMap = sourceIt->second;
+                        auto typeIt = typeCallbackMap.find(type);
+                        
+                        if (typeIt != typeCallbackMap.end()) {
+                            // Call the specific callback
+                            typeIt->second(message);
+                            return;
+                        }
+                    }
+
+                    // Find the callback for this specific message type
+                    // auto it = m_messageReceivedCallback.find(message.getType());
+                    
+                    // // If a callback is registered for this type, invoke it
+                    // if (it != m_messageReceivedCallback.end()) {
+                    //     it->second(message);
+                    //     std::cout << "[CommService::handleClient] fired event: " << std::endl;
+                    // }
+                    else{
+                        std::cout << "Didn't find type: " << int(message.getType()) << std::endl;
                     }
 
                     // Log the received message type
-                    std::cout << "Received message of type: " 
+                    std::cout << "[CommService::handleClient] Received message of type: " 
                               << static_cast<int>(message.getType()) << std::endl;
                 }
                 catch (const std::exception& e)
                 {
+                    std::cout << "[CommService::handleClient] Error: " << e.what() << std::endl;
                     std::cerr << "Error parsing message: " << e.what() << std::endl;
                 }
 
@@ -133,26 +167,26 @@ namespace Communication
     }
 
     // Method to send a message
-    void CommService::sendMessage(const ClientMessage& message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
+    void CommService::sendMessage(const ClientMessage &message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
     {
-        try 
+        try
         {
             // Serialize the message to JSON
             json serializedMessage = message.serialize();
             std::string jsonStr = serializedMessage.dump();
 
             // Send the serialized message
-            boost::asio::async_write(*socket, 
-                boost::asio::buffer(jsonStr), 
-                [](const boost::system::error_code& error, std::size_t /*bytes_transferred*/) 
-                {
-                    if (error)
-                    {
-                        std::cerr << "Error sending message: " << error.message() << std::endl;
-                    }
-                });
+            boost::asio::async_write(*socket,
+                                     boost::asio::buffer(jsonStr),
+                                     [](const boost::system::error_code &error, std::size_t /*bytes_transferred*/)
+                                     {
+                                         if (error)
+                                         {
+                                             std::cerr << "Error sending message: " << error.message() << std::endl;
+                                         }
+                                     });
         }
-        catch (const std::exception& e)
+        catch (const std::exception &e)
         {
             std::cerr << "Error serializing message: " << e.what() << std::endl;
         }

@@ -7,63 +7,73 @@
 
 using json = nlohmann::json;
 
-VideoSettingsManager::VideoSettingsManager(Communication::CommService &commService) : m_commService(commService)
-{
-    commService.setMessageReceivedCallback([this](ClientMessage &message)
-                                           { onMessageReceived(message); });
-    commService.start();
-}
+VideoSettingsManager::VideoSettingsManager(){}
+// VideoSettingsManager::VideoSettingsManager(Communication::CommService &commService) : m_commService(commService)
+// {
+//     commService.setMessageReceivedCallback(MessageType::UPDATE_SETTINGS, 
+//                                            [this](ClientMessage &message)
+//                                            {
+//                                                onMessageReceived(message);
+//                                            });
+//     commService.start();
+// }
 
 VideoSettingsManager::~VideoSettingsManager()
 {
-    m_commService.stop();
+    // m_commService.stop();
 }
 
-void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const ClientMessage &)> callback)
-{
-    std::cout << "Register with source id: " << sourceKey << std::endl;
-    std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-    m_listenersMap[sourceKey] = callback;
-    std::cout << "Register finished for id: " << sourceKey << std::endl;
-}
+// void VideoSettingsManager::RegisterListener(std::string sourceKey, std::function<void(const ClientMessage &)> callback)
+// {
+//     std::cout << "Register for update settings message with source id: " << sourceKey << std::endl;
+//     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
+//     m_listenersMap[sourceKey] = callback;
+//     // std::cout << "Register finished for id: " << sourceKey << std::endl;
+// }
 
-void VideoSettingsManager::UnregisterListener(std::string sourceKey)
-{
-    std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-    m_listenersMap.erase(sourceKey);
-}
+// void VideoSettingsManager::UnregisterListener(std::string sourceKey)
+// {
+//     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
+//     m_listenersMap.erase(sourceKey);
+// }
 
-void VideoSettingsManager::onMessageReceived(ClientMessage &message)
-{
-    try
-    {
-        auto msgType = message.getType();
-        std::cout << "Msg type: " << int(msgType) << std::endl;
+// void VideoSettingsManager::onMessageReceived(ClientMessage &message)
+// {
+//     try
+//     {
+//         auto msgType = message.getType();
+//         std::cout << "Msg type: " << int(msgType) << std::endl;
 
-        if (msgType == MessageType::UPDATE_SETTINGS)
-        { // update settings
-            auto msgData = message.getData<UpdateSettingsData>();
+//         if (msgType == MessageType::UPDATE_SETTINGS)
+//         { // update settings
+//             auto msgData = message.getData<UpdateSettingsData>();
 
-            std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-            auto it = m_listenersMap.find(msgData.sourceId);
+//             std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
+//             auto it = m_listenersMap.find(msgData.sourceId);
 
-            std::cout << "check for: " << msgData.sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
+//             std::cout << "check for: " << msgData.sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
 
-            UpdateSetting(msgData.sourceId, msgData.propertyName, stod(msgData.propertyValue));
-            if (it != m_listenersMap.end())
-            {
-                // Fire the listener callback
-                // std::cout << "msg received in settings manager " << message << std::endl;
-                it->second(message);
-            }
-        }
-    }
-    catch (const std::exception &ex)
-    {
-        std::cerr << "Failed to process message: " << ex.what() << std::endl;
-    }
-}
- 
+//             UpdateSetting(msgData.sourceId, msgData.propertyName, stod(msgData.propertyValue));
+//             if (it != m_listenersMap.end())
+//             {
+//                 // Fire the listener callback
+//                 // std::cout << "msg received in settings manager " << message << std::endl;
+//                 it->second(message);
+//             }
+//             else{
+//                 std::cout << "error: event not fired -> source not found: " << msgData.sourceId << std::endl;
+//             }
+//         }
+//         else{
+//             std::cout << "wrong message type cought"<< std::endl;
+//         }
+//     }
+//     catch (const std::exception &ex)
+//     {
+//         std::cerr << "Failed to process message: " << ex.what() << std::endl;
+//     }
+// }
+
 void VideoSettingsManager::SetSettings(const std::string sourceKey, const VideoSettings &settings)
 {
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);

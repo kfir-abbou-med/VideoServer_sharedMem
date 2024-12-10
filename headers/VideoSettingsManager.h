@@ -9,7 +9,8 @@
 
 class VideoSettingsManager {
 public:
-    VideoSettingsManager(Communication::CommService &commService);
+    // VideoSettingsManager(Communication::CommService &commService);
+    VideoSettingsManager();
     ~VideoSettingsManager();
 
     // Retrieve settings for a given source, create default if not found
@@ -30,9 +31,9 @@ public:
     // Load all settings from a JSON file
     void LoadFromFile(const std::string& filePath);
 
-    void RegisterListener(std::string sourceKey, std::function<void(const ClientMessage&)> callback);
+    // void RegisterListener(std::string sourceKey, std::function<void(const ClientMessage&)> callback);
     
-    void UnregisterListener(std::string sourceKey);
+    // void UnregisterListener(std::string sourceKey);
 
 
 private:
@@ -40,8 +41,8 @@ private:
     std::unordered_map<std::string, std::function<void(const ClientMessage&)>> m_listenersMap;
     // mutable std::mutex m_settingsMutex;
     mutable std::recursive_mutex m_settingsMutex;
-    Communication::CommService& m_commService;
-    void onMessageReceived(ClientMessage &message);
+    // Communication::CommService& m_commService;
+    // void onMessageReceived(ClientMessage &message);
 };
 
 #endif // VIDEOSETTINGSMANAGER_H

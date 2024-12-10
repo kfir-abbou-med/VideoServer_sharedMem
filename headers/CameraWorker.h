@@ -15,9 +15,8 @@ class CameraWorker : public QObject {
 
 public:
     // explicit CameraWorker(int cameraIndex, QObject *parent = nullptr);
-    explicit CameraWorker(int cameraIndex, const std::string& sourceKey, VideoSettingsManager& settingsManager, QObject *parent = nullptr);
-    explicit CameraWorker(int cameraIndex, VideoSettingsManager& settingsManager, QObject *parent = nullptr);
-    // explicit CameraWorker(int cameraIndex, QObject *parent = nullptr);
+    explicit CameraWorker(int cameraIndex, const std::string& sourceKey, Communication::CommService &commService, VideoSettingsManager& settingsManager, QObject *parent = nullptr);
+    explicit CameraWorker(int cameraIndex, Communication::CommService& commService, VideoSettingsManager& settingsManager, QObject *parent = nullptr);
     ~CameraWorker();
 
 public slots:
@@ -27,14 +26,18 @@ public slots:
     // void changeZoom(double factor);
 
 signals:
-    void onMessageReceived(const json &message);
+    // void onMessageReceived(const json &message);
+    // void onSettingsMgrMessageReceived(const ClientMessage &message);
     void frameReady(const QImage &image);
     void errorOccurred(const QString &error);
     void fpsUpdated(double fps);
 
 private:
-    void handleMessage(const ClientMessage &message);
+    void settingsMgrMessageReceived(const ClientMessage &message); 
+    void onMessageReceived(ClientMessage &message);
+    void onMessageReceived1(ClientMessage &message);
     VideoSettingsManager& m_settingsManager;
+    Communication::CommService& m_commService;
     std::string currentSrcId;
     int m_cameraIndex;
     bool isRunning;
@@ -42,6 +45,7 @@ private:
     cv::VideoCapture capture;
     double brightnessFactor;  
     double zoomFactor;        
+    char m_sharedMemoryName[32];
 };
 
 #endif // CAMERAWORKER_H

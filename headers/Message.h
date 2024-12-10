@@ -1,5 +1,5 @@
 #pragma once
-
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <variant>
 #include <string>
@@ -22,7 +22,7 @@ enum class MessageType
 // Data structures for different message types
 struct StatusData
 {
-    std::string sourceId;
+    // std::string sourceId;
     std::string message;
     int code;
 
@@ -30,7 +30,7 @@ struct StatusData
     json serialize() const
     {
         return {
-            {"sourceId", sourceId},
+            // {"sourceId", sourceId},
             {"message", message},
             {"code", code}};
     }
@@ -39,15 +39,16 @@ struct StatusData
     static StatusData deserialize(const json &j)
     {
         return {
-            j.value("sourceId", ""),
-            j.value("message", ""),
-            j.value("code", 0)};
+                // j.value("sourceId", ""),
+                j.value("message", ""),
+                j.value("code", 0)
+            };
     }
 };
 
 struct UpdateSettingsData
 {
-    std::string sourceId;
+    // std::string sourceId;
     std::string propertyName;
     std::string propertyValue;
 
@@ -55,7 +56,7 @@ struct UpdateSettingsData
     json serialize() const
     {
         return {
-            {"sourceId", sourceId},
+            // {"sourceId", sourceId},
             {"propertyName", propertyName},
             {"propertyValue", propertyValue}};
     }
@@ -64,7 +65,7 @@ struct UpdateSettingsData
     static UpdateSettingsData deserialize(const json &j)
     {
         return {
-            j.value("sourceId", ""),
+            // j.value("sourceId", ""),
             j.value("propertyName", ""),
             j.value("propertyValue", "")};
     }
@@ -72,7 +73,7 @@ struct UpdateSettingsData
 
 struct CommandData
 {
-    std::string sourceId;
+    // std::string sourceId;
     std::string command;
     std::vector<std::string> arguments;
 
@@ -80,7 +81,7 @@ struct CommandData
     json serialize() const
     {
         return {
-            {"sourceId", sourceId},
+            // {"sourceId", sourceId},
             {"command", command},
             {"arguments", arguments}};
     }
@@ -89,7 +90,7 @@ struct CommandData
     static CommandData deserialize(const json &j)
     {
         return {
-            j.value("sourceId", ""),
+            // j.value("sourceId", ""),
             j.value("command", ""),
             j.value("arguments", std::vector<std::string>{})};
     }
@@ -97,7 +98,7 @@ struct CommandData
 
 struct ErrorData
 {
-    std::string sourceId;
+    // std::string sourceId;
     std::string errorMessage;
     int errorCode;
 
@@ -105,7 +106,7 @@ struct ErrorData
     json serialize() const
     {
         return {
-            {"sourceId", sourceId},
+            // {"sourceId", sourceId},
             {"errorMessage", errorMessage},
             {"errorCode", errorCode}};
     }
@@ -114,7 +115,7 @@ struct ErrorData
     static ErrorData deserialize(const json &j)
     {
         return {
-            j.value("sourceId", ""),
+            // j.value("sourceId", ""),
             j.value("errorMessage", ""),
             j.value("errorCode", 0)};
     }
@@ -136,14 +137,18 @@ public:
 
     // Constructor with type and data
     template <typename T>
-    ClientMessage(MessageType type, const T &data)
-        : m_type(type), m_data(data) {}
+    ClientMessage(std::string sourceId, MessageType type, const T &data)
+        :  m_sourceId(sourceId), m_type(type), m_data(data){
+            m_sourceId = sourceId;
+        }
 
     // Serialize the entire message to JSON
     json serialize() const
     {
         json j = {
-            {"type", static_cast<int>(m_type)}};
+                {"type", static_cast<int>(m_type)},
+                {"sourceId", m_sourceId}
+            };
 
         // Serialize data based on type
         std::visit([&j](const auto &data)
@@ -161,7 +166,8 @@ public:
     {
         ClientMessage msg;
         msg.m_type = static_cast<MessageType>(j.value("type", 0));
-
+        msg.m_sourceId = j.value("sourceId", "");
+        std::cout << "deserialize: deserialize-> " << msg.m_sourceId << std::endl;
         switch (msg.m_type)
         {
         case MessageType::STATUS:
@@ -212,26 +218,27 @@ public:
     // Static factory methods for common message types
     static ClientMessage createStatusMessage(std::string sourceId, const std::string &message, int code = 0)
     {
-        return ClientMessage(MessageType::STATUS, StatusData{sourceId, message, code});
+        return ClientMessage(sourceId, MessageType::STATUS, StatusData{message, code});
     }
 
     static ClientMessage createUpdateSettingsMessage(std::string sourceId, const std::string &name, const std::string &value)
     {
-        return ClientMessage(MessageType::UPDATE_SETTINGS, UpdateSettingsData{sourceId, name, value});
+        std::cout << "Creating update settings message - SourceID: " << sourceId << std::endl;
+        return ClientMessage(sourceId, MessageType::UPDATE_SETTINGS, UpdateSettingsData{name, value});
     }
 
     static ClientMessage createCommandMessage(std::string sourceId, const std::string &command, const std::vector<std::string> &args = {})
     {
-        return ClientMessage(MessageType::COMMAND, CommandData{sourceId, command, args});
+        return ClientMessage(sourceId, MessageType::COMMAND, CommandData{command, args});
     }
 
     static ClientMessage createErrorMessage(std::string sourceId, const std::string &message, int code = -1)
     {
-        return ClientMessage(MessageType::ERROR, ErrorData{sourceId, message, code});
+        return ClientMessage(sourceId, MessageType::ERROR, ErrorData{message, code});
     }
 
 private:
-    std::string m_sourceId = "";
+    std::string m_sourceId;
     MessageType m_type = MessageType::UNKNOWN;
     MessageData m_data;
 };
