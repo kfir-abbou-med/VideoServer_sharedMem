@@ -46,56 +46,24 @@ CameraWorker::~CameraWorker()
 void CameraWorker::handleMessage(const ClientMessage &message)
 {
     cout << "Message received on worker..." << endl;
-
-    if (message.getType() == MessageType::UPDATE_SETTINGS)
-    {
-        auto msgData = message.getData<UpdateSettingsData>();
-
-        // can refresh by property or all
-        VideoSettings srcSettings = m_settingsManager.GetSettings(msgData.sourceId);
-
-        zoomFactor = srcSettings.GetPropertyValue("zoom");
-        brightnessFactor = srcSettings.GetPropertyValue("brightness");
-    }
-
     try
     {
-        std::cout << "calling UpdateSetting " << std::endl;
-        // bool updated = m_settingsManager.UpdateSetting(sourceId, propertyName, propertyValue);
-        // if (updated)
-        // {
-        //     std::cout << "UpdateSetting called successfully" << std::endl;
+        if (message.getType() == MessageType::UPDATE_SETTINGS)
+        {
+            auto msgData = message.getData<UpdateSettingsData>();
 
-        //     VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
-        //     zoomFactor = srcSettings.GetPropertyValue("zoom");
-        //     brightnessFactor = srcSettings.GetPropertyValue("brightness");
+            // can refresh by property or all
+            VideoSettings srcSettings = m_settingsManager.GetSettings(msgData.sourceId);
 
-        //     cout << "brightnessFactor: " << brightnessFactor << endl;
-        // }
-        // else
-        // {
-        //     cout << "Update failed... " << endl;
-        // }
+            zoomFactor = srcSettings.GetPropertyValue("zoom");
+            brightnessFactor = srcSettings.GetPropertyValue("brightness");
+        }
     }
     catch (const std::exception &e)
     {
         std::cerr << "Exception in UpdateSetting: " << e.what() << std::endl;
     }
 }
-
-// std::tuple<std::string, std::string, double> deserializeMessage(const std::string &message)
-// {
-//     // Parse the JSON message
-//     auto jsonData = nlohmann::json::parse(message);
-
-//     std::string sourceId = jsonData["sourceId"];
-//     std::string propertyName = jsonData["propertyName"];
-//     double propertyValue = jsonData["propertyValue"];
-
-//     // cout << "deserializeMessage::sourceId: " << sourceId << endl;
-//     // Return as a tuple
-//     return std::make_tuple(sourceId, propertyName, propertyValue);
-// }
 
 void CameraWorker::start()
 {
@@ -111,6 +79,8 @@ void CameraWorker::start()
     try
     {
         cout << "trying to open cam index: " << m_cameraIndex << endl;
+
+        // TBD: extract functions and classes
 
         // Open camera
         capture.open(m_cameraIndex, cv::CAP_V4L2);

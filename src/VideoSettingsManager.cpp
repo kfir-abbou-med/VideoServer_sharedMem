@@ -5,7 +5,6 @@
 #include <iostream>
 #include <bits/stdc++.h>
 
-// Using nlohmann::json
 using json = nlohmann::json;
 
 VideoSettingsManager::VideoSettingsManager(Communication::CommService &commService) : m_commService(commService)
@@ -38,9 +37,6 @@ void VideoSettingsManager::onMessageReceived(ClientMessage &message)
 {
     try
     {
-        // std::cout << "[VideoSettingsManager::onMessageReceived] " << message << std::endl;
-        // // Parse the JSON message
-
         auto msgType = message.getType();
         std::cout << "Msg type: " << int(msgType) << std::endl;
 
@@ -61,44 +57,13 @@ void VideoSettingsManager::onMessageReceived(ClientMessage &message)
                 it->second(message);
             }
         }
-
-        // auto jsonData = json::parse(message);
-        // auto sourceId = message.at("sourceId");
-        // std::string propertyName = message.at("propertyName");
-        // double propertyValue = message.at("propertyValue");
-
-        // std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-        // auto it = m_listenersMap.find(sourceId);
-
-        // std::cout << "check for: " << sourceId << " in map with size: " << m_listenersMap.size() << std::endl;
-        // for (auto const &x : m_listenersMap)
-        // {
-        //     std::cout << x.first << std::endl;
-        // }
-
-        // if (it != m_listenersMap.end())
-        // {
-        //     // Fire the listener callback
-        //     std::cout << "msg received in settings manager " << message << std::endl;
-        //     it->second(message);
-        // }
     }
     catch (const std::exception &ex)
     {
         std::cerr << "Failed to process message: " << ex.what() << std::endl;
     }
 }
-
-// VideoSettings VideoSettingsManager::GetSettings(const std::string sourceKey)
-// {
-//     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-//     if (m_settingsMap.find(sourceKey) == m_settingsMap.end())
-//     {
-//         m_settingsMap[sourceKey] = VideoSettings(); // Create default settings
-//     }
-//     return m_settingsMap[sourceKey];
-// }
-
+ 
 void VideoSettingsManager::SetSettings(const std::string sourceKey, const VideoSettings &settings)
 {
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
@@ -143,7 +108,6 @@ bool VideoSettingsManager::UpdateSetting(const std::string sourceKey, const std:
     return true;
 }
 
-// Modify other methods similarly to use recursive_mutex
 VideoSettings VideoSettingsManager::GetSettings(const std::string sourceKey)
 {
     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
@@ -153,49 +117,6 @@ VideoSettings VideoSettingsManager::GetSettings(const std::string sourceKey)
     }
     return m_settingsMap[sourceKey];
 }
-
-// bool VideoSettingsManager::UpdateSetting(const std::string sourceKey, const std::string &settingName, double value)
-// {
-//      std::cout << "Thread ID: " << std::this_thread::get_id()
-//               << " attempting to update setting" << std::endl;
-
-//     // Check if mutex is already locked by this thread
-//     if (m_settingsMutex.try_lock()) {
-//         m_settingsMutex.unlock();
-//     } else {
-//         std::cerr << "Mutex already locked by another thread" << std::endl;
-//         return false;
-//     }
-
-//     std::lock_guard<std::recursive_mutex> lock(m_settingsMutex);
-
-//     std::cout << "Mutex acquired successfully" << std::endl;
-
-//     auto it = m_settingsMap.find(sourceKey);
-
-//     if (it != m_settingsMap.end())
-//     {
-//         std::cout << "id: " << sourceKey << "found!" << std::endl;
-
-//         if (settingName == "brightness")
-//         {
-//             it->second.brightness = value;
-//         }
-//         else if (settingName == "zoom")
-//         {
-//             it->second.zoom = value;
-//         }
-//         else
-//         {
-//             return false; // Unknown setting
-//         }
-//         std::cout << "UpdateSetting -> ok" << std::endl;
-//         return true;
-//     }
-//     std::cout << "id: " << sourceKey << "Not found!" << std::endl;
-
-//     return false; // Source not found
-// }
 
 void VideoSettingsManager::RemoveSource(std::string sourceKey)
 {
