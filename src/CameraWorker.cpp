@@ -58,14 +58,16 @@ void CameraWorker::settingsMgrMessageReceived(const ClientMessage &message)
     cout << "Message received on worker..." << endl;
     try
     {
-        auto msgData = message.getData<UpdateSettingsData>();
-        auto sourceId = message.getSource();
 
-        // can refresh by property or all
-        VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
+        cout << "Removed!!! " << endl;
+        // auto msgData = message.getData<UpdateSettingsData>();
+        // auto sourceId = message.getSource();
 
-        zoomFactor = srcSettings.GetPropertyValue("zoom");
-        brightnessFactor = srcSettings.GetPropertyValue("brightness");
+        // // can refresh by property or all
+        // VideoSettings srcSettings = m_settingsManager.GetSettings(sourceId);
+
+        // zoomFactor = srcSettings.GetPropertyValue("zoom");
+        // brightnessFactor = srcSettings.GetPropertyValue("brightness");
     }
     catch (const std::exception &e)
     {
@@ -228,6 +230,11 @@ void CameraWorker::processFrames()
             updateSharedMemory(processedCpuFrame);
             
             fpsTracker.update();
+
+            std::stringstream fpsText;
+            fpsText << "FPS: " << std::fixed << std::setprecision(2) << fpsTracker.getFPS();
+            cout << fpsText.str() << " -> " << m_sharedMemoryName << endl;
+
             QThread::msleep(10);
         }
         catch (const cv::Exception &e)

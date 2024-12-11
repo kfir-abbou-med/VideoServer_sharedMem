@@ -64,10 +64,8 @@ namespace Communication
             m_messageReceivedCallbacks;
         std::atomic<bool> isRunning;
 
-        
         // Boost.Asio components
         boost::asio::io_context ioContext;
         boost::asio::ip::tcp::acceptor acceptor;
-
     };
 }

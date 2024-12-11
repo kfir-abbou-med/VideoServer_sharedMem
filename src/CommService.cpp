@@ -155,7 +155,6 @@ namespace Communication
             } });
     }
 
-    // Method to send a message
     void CommService::sendMessage(const ClientMessage &message, std::shared_ptr<boost::asio::ip::tcp::socket> socket)
     {
         try
