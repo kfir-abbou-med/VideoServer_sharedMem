@@ -5,12 +5,14 @@ TARGET = CameraManager
 # TEMPLATE = app
 
 # Add C++ version
-CONFIG += c++17 \
+CONFIG += debug \
+          c++17 \
           thread
+          
 
+QMAKE_CXXFLAGS += -g
 
 CUDA_DIR = /usr/local/cuda
-
 
 CUDA_ARCH = sm_50
 
