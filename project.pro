@@ -65,6 +65,7 @@ SOURCES += \
     src/FrameRateTracker.cpp \
     src/CommService.cpp \
     src/VideoSettingsManager.cpp \
+    src/SharedMemoryService.cpp \
     src/VideoSettings.cpp
 .cpp
 
@@ -76,6 +77,7 @@ HEADERS += \
     headers/MessageUtils.h \
     headers/VideoSettingsManager.h \
     headers/VideoSettings.h \
+    headers/SharedMemoryService.h \
     headers/Message.h 
 
 
