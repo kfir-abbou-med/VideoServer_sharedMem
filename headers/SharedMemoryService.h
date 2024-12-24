@@ -25,6 +25,9 @@ namespace SharedMemory
 
     private:
         char *m_name;
+        boost::interprocess::shared_memory_object m_shm;
+        boost::interprocess::mapped_region m_shmRegion;
+        void* m_sharedMemory;
     };
 }
 

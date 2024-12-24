@@ -55,7 +55,6 @@ CameraWorker::~CameraWorker()
 
 void CameraWorker::settingsMgrMessageReceived(const ClientMessage &message)
 {
-    cout << "Message received on worker..." << endl;
     try
     {
 
